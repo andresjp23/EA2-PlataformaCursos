@@ -1,0 +1,421 @@
+================================================================================
+        PLATAFORMA DE CURSOS ONLINE - ESTRUCTURA COMPLETA DEL PROYECTO
+================================================================================
+
+📦 UBICACION: /Users/ajordanp/MyProjects/PlataformaCursos
+
+================================================================================
+1. ESTRUCTURA GENERAL DE CARPETAS
+================================================================================
+
+PlataformaCursos/
+├── .github/
+│   └── java-upgrade/                     (Configuración de hooks y scripts)
+├── .vscode/                              (Configuración de VSCode)
+├── docs/
+│   ├── PROYECTO_PLATAFORMA_CURSOS.md     (Documentación técnica detallada)
+│   └── PLAN_DESARROLLO.md                (Plan de desarrollo por fases)
+├── ms-01-eureka/                         (Eureka Server - Service Registry)
+├── ms-02-gateway/                        (API Gateway - Entry Point)
+└── ms-03-auth-service/                   (Auth Service - Autenticación)
+
+================================================================================
+2. MICROSERVICIOS IMPLEMENTADOS
+================================================================================
+
+ESTADO ACTUAL: 3 servicios de infraestructura completados
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ MS-01 EUREKA SERVER (Service Registry)                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Puerto: 8761                                                             │
+│ URL: http://localhost:8761/eureka/                                       │
+│ Versión Spring Boot: 4.0.6                                               │
+│ Versión Spring Cloud: 2025.1.1                                           │
+│ Rol: Registry donde se registran todos los microservicios                │
+│                                                                           │
+│ Archivo Principal:                                                       │
+│ └── Ms01EurekaApplication.java                                          │
+│     @SpringBootApplication                                              │
+│     @EnableEurekaServer                                                 │
+│                                                                           │
+│ Configuración (application.properties):                                  │
+│ • spring.application.name=ms-01-eureka                                  │
+│ • server.port=8761                                                       │
+│ • eureka.instance.hostname=localhost                                     │
+│ • eureka.client.register-with-eureka=false (no se registra a sí mismo)  │
+│ • eureka.client.fetch-registry=false                                     │
+│ • eureka.server.enable-self-preservation=false                          │
+│                                                                           │
+│ Dependencias (pom.xml):                                                  │
+│ └── spring-cloud-starter-netflix-eureka-server                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ MS-02 API GATEWAY (Request Router)                                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Puerto: 8080                                                             │
+│ Versión Spring Boot: 4.0.6                                               │
+│ Versión Spring Cloud: 2025.1.1                                           │
+│ Rol: Entry point de todas las peticiones, enruta a microservicios       │
+│      Implementa circuit breaker con Resilience4J                         │
+│                                                                           │
+│ Archivo Principal:                                                       │
+│ └── Ms02GatewayApplication.java                                         │
+│     @SpringBootApplication                                              │
+│                                                                           │
+│ Configuración (application.properties):                                  │
+│ • spring.application.name=ms-02-gateway                                 │
+│ • server.port=8080                                                       │
+│ • eureka.client.service-url.defaultZone=http://localhost:8761/eureka/   │
+│ • eureka.client.register-with-eureka=true                               │
+│ • eureka.client.fetch-registry=true                                      │
+│                                                                           │
+│ Rutas Configuradas:                                                      │
+│ [0] id: auth-service                                                     │
+│     uri: lb://auth-service (Load Balanced)                              │
+│     predicates: Path=/auth/**                                            │
+│                                                                           │
+│ [1] id: user-service                                                     │
+│     uri: lb://user-service                                              │
+│     predicates: Path=/users/**                                           │
+│                                                                           │
+│ Dependencias (pom.xml):                                                  │
+│ ├── spring-cloud-starter-circuitbreaker-resilience4j (Circuit Breaker)  │
+│ ├── spring-cloud-starter-gateway-server-webmvc                          │
+│ └── spring-cloud-starter-netflix-eureka-client                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ MS-03 AUTH-SERVICE (Authentication & JWT)                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Puerto: 8081                                                             │
+│ Base de Datos: MySQL - db_auth                                           │
+│ Versión Spring Boot: 3.5.14                                              │
+│ Versión Spring Cloud: 2025.0.2                                           │
+│ Rol: Autenticación de usuarios, generación y validación de tokens JWT   │
+│                                                                           │
+│ ESTRUCTURA INTERNA:                                                      │
+│                                                                           │
+│ src/main/java/com/plataforma/ms_03_auth_service/                        │
+│ ├── Ms03AuthServiceApplication.java (Clase principal)                   │
+│ │                                                                        │
+│ ├── config/                          (Configuración de seguridad)       │
+│ │   ├── SecurityConfig.java          (Spring Security + JWT)            │
+│ │   │   • @Configuration                                               │
+│ │   │   • @EnableWebSecurity                                           │
+│ │   │   • Bean: PasswordEncoder (BCryptPasswordEncoder)                │
+│ │   │   • Bean: SecurityFilterChain                                    │
+│ │   │   • Bean: AuthenticationManager                                  │
+│ │   │                                                                   │
+│ │   └── JwtUtil.java                 (Generador de tokens)             │
+│ │       • @Component                                                   │
+│ │       • generateToken(username): String                              │
+│ │       • Usa JJWT para firmar tokens con HS256                       │
+│ │       • Expiration: 3600000ms (1 hora)                              │
+│ │                                                                       │
+│ ├── controllers/                     (Endpoints REST)                   │
+│ │   ├── AuthController.java          (Manejo de login/register)        │
+│ │   │   • @RestController                                             │
+│ │   │   • @RequestMapping("/auth")                                    │
+│ │   │   • POST /auth/login (LoginRequest) -> token                    │
+│ │   │   • POST /auth/register (RegisterRequest) -> mensaje            │
+│ │   │                                                                   │
+│ │   ├── LoginRequest.java            (DTO para login)                  │
+│ │   │   • email: String                                               │
+│ │   │   • password: String                                            │
+│ │   │                                                                   │
+│ │   └── RegisterRequest.java         (DTO para registro)              │
+│ │       • email: String                                               │
+│ │       • password: String                                            │
+│ │       • role: String (opcional, default: "STUDENT")                 │
+│ │                                                                       │
+│ ├── models/                         (Entidades JPA)                    │
+│ │   └── User.java                   (Modelo de Usuario)               │
+│ │       @Entity @Table(name = "users")                                │
+│ │       • @Id @GeneratedValue(strategy = IDENTITY)                    │
+│ │       • id: Long                                                    │
+│ │       • email: String @Column(unique=true, nullable=false)          │
+│ │       • password: String @Column(nullable=false)                    │
+│ │       • enabled: boolean                                            │
+│ │       • role: String                                                │
+│ │                                                                       │
+│ ├── repositories/                   (Acceso a datos)                   │
+│ │   └── UserRepository.java         (JPA Repository)                  │
+│ │       extends JpaRepository<User, Long>                             │
+│ │       • Optional<User> findByEmail(String email)                    │
+│ │                                                                       │
+│ └── services/                       (Lógica de negocio)                │
+│     ├── UserDetailServiceImpl.java   (Autenticación)                   │
+│     │   implements UserDetailsService                                 │
+│     │   • loadUserByUsername(String username): UserDetails            │
+│     │   • Busca en BD y retorna usuario con autoridades              │
+│     │                                                                   │
+│     └── DataInitializer.java        (Datos iniciales)                 │
+│         implements CommandLineRunner                                   │
+│         • Crea usuario ADMIN por defecto al iniciar                   │
+│         • email: admin@cursos.com / password: admin123               │
+│         • role: ROLE_ADMIN                                            │
+│                                                                           │
+│ CONFIGURACION (application.properties):                                  │
+│ • spring.application.name=auth-service                                  │
+│ • server.port=8081                                                       │
+│ • spring.datasource.url=jdbc:mysql://localhost:3306/db_auth             │
+│ • spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver          │
+│ • spring.jpa.hibernate.ddl-auto=update                                  │
+│ • spring.jpa.show-sql=true                                              │
+│ • spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect │
+│ • eureka.client.service-url.defaultZone=http://localhost:8761/eureka/   │
+│ • jwt.secret=PlataformaCursosSecretKey2026MuyLargaParaSeguridad         │
+│ • jwt.expiration=86400000 (24 horas)                                    │
+│                                                                           │
+│ DEPENDENCIAS (pom.xml):                                                  │
+│ ├── Spring Boot                                                          │
+│ │   ├── spring-boot-starter-actuator                                   │
+│ │   ├── spring-boot-starter-data-jpa                                   │
+│ │   ├── spring-boot-starter-security                                   │
+│ │   ├── spring-boot-starter-web                                        │
+│ │   └── spring-boot-starter-test (test)                               │
+│ │                                                                       │
+│ ├── Base de Datos                                                        │
+│ │   └── mysql-connector-j (runtime)                                    │
+│ │                                                                       │
+│ ├── JWT (JJWT)                                                          │
+│ │   ├── jjwt-api (v0.11.5)                                            │
+│ │   ├── jjwt-impl (v0.11.5, runtime)                                  │
+│ │   └── jjwt-jackson (v0.11.5, runtime)                               │
+│ │                                                                       │
+│ ├── Utilidades                                                           │
+│ │   └── lombok (optional)                                              │
+│ │                                                                       │
+│ ├── Cloud                                                                │
+│ │   └── spring-cloud-starter-netflix-eureka-client                    │
+│ │                                                                       │
+│ └── Testing                                                              │
+│     └── spring-security-test (test)                                    │
+│                                                                           │
+│ ENDPOINTS:                                                               │
+│ POST   /auth/login     - Login con email y contraseña                   │
+│        Request body: { "email": "...", "password": "..." }             │
+│        Response: { "token": "...", "role": "...", "userId": ... }     │
+│                                                                           │
+│ POST   /auth/register  - Registro de nuevo usuario                      │
+│        Request body: { "email": "...", "password": "...", "role": ... } │
+│        Response: { "message": "Usuario registrado exitosamente" }      │
+│                                                                           │
+│ FLUJO DE AUTENTICACION:                                                  │
+│ 1. Cliente POST /auth/login con credenciales                            │
+│ 2. SecurityConfig valida con AuthenticationManager                      │
+│ 3. UserDetailServiceImpl busca usuario en BD                            │
+│ 4. Si existe, JwtUtil genera token JWT                                 │
+│ 5. Response retorna token + rol + userId                               │
+│ 6. Cliente guarda token y lo envía en futuras requests                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+3. CONFIGURACION GLOBAL
+================================================================================
+
+VERSIONS JAVA Y SPRING:
+• Java: JDK 21
+• Spring Boot: 4.0.6 (Eureka, Gateway) y 3.5.14 (Auth Service)
+• Spring Cloud: 2025.1.1 (Eureka, Gateway) y 2025.0.2 (Auth Service)
+• Maven: wrapper en cada módulo (.mvn/wrapper)
+
+ESTRUCTURA MAVEN (pom.xml):
+Cada servicio tiene:
+├── parent
+│   └── spring-boot-starter-parent (versión específica)
+├── groupId: com.plataforma
+├── artifactId: ms-XX-nombre (naming convention)
+├── version: 0.0.1-SNAPSHOT
+├── properties
+│   ├── java.version=21
+│   └── spring-cloud.version=2025.X.X
+├── dependencies (dependencias específicas)
+├── dependencyManagement (versiones de Spring Cloud)
+└── build (plugins maven)
+
+================================================================================
+4. COMPONENTES PRINCIPALES POR CAPAS
+================================================================================
+
+ARQUITECTURA MULTINIVEL (Típica en todos los servicios):
+
+┌─────────────────────────────────────────┐
+│         CONTROLADORES (REST)            │
+│   - Endpoint definitions                │
+│   - Request/Response handling           │
+│   - @RestController, @GetMapping, etc   │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│      SERVICIOS (Business Logic)         │
+│   - Lógica de negocio                   │
+│   - Validaciones                        │
+│   - Orquestación                        │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│    REPOSITORIOS (Data Access)           │
+│   - JpaRepository                       │
+│   - Queries personalizadas              │
+│   - @Repository                         │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│   BASE DE DATOS (MySQL)                 │
+│   - Tablas persistentes                 │
+│   - Relaciones e índices                │
+└─────────────────────────────────────────┘
+
+CAPAS TRANSVERSALES:
+├── CONFIG (Configuración)
+│   ├── Spring Security
+│   ├── JWT
+│   ├── Database
+│   └── Feign Clients (comunicación inter-servicios)
+│
+├── MODELS (Entidades)
+│   ├── Anotaciones JPA (@Entity, @Column)
+│   ├── Relaciones (@OneToMany, @ManyToOne)
+│   └── Validaciones (@NotNull, @Email, etc)
+│
+├── DTOs (Data Transfer Objects)
+│   ├── Request DTOs (LoginRequest, RegisterRequest)
+│   ├── Response DTOs
+│   └── Mapeo a Entities
+│
+└── CLIENTS (Feign Clients)
+    ├── Comunicación síncrona inter-servicios
+    ├── Load balancing con Eureka
+    └── Circuit breaker con Resilience4J
+
+================================================================================
+5. TABLA DE DEPENDENCIAS Y VERSIONES
+================================================================================
+
+DEPENDENCIA                                    VERSION      SCOPE     MICROSERVICIO
+────────────────────────────────────────────────────────────────────────────────
+spring-boot-starter-parent                     4.0.6/3.5.14           Todos
+spring-cloud-starter-netflix-eureka-server     2025.1.1               MS-01-Eureka
+spring-cloud-starter-netflix-eureka-client     2025.1.1/2025.0.2      MS-02, MS-03
+spring-cloud-starter-gateway-server-webmvc     2025.1.1               MS-02
+spring-cloud-starter-circuitbreaker-resilience4j 2025.1.1             MS-02
+spring-boot-starter-actuator                   Incluida               MS-03
+spring-boot-starter-data-jpa                   Incluida               MS-03
+spring-boot-starter-security                   Incluida               MS-03
+spring-boot-starter-web                        Incluida               MS-03
+mysql-connector-j                              Incluida    runtime    MS-03
+lombok                                         Incluida    optional   MS-03
+spring-boot-starter-test                       Incluida    test       Todos
+spring-security-test                           Incluida    test       MS-03
+jjwt-api                                       0.11.5                 MS-03
+jjwt-impl                                      0.11.5      runtime    MS-03
+jjwt-jackson                                   0.11.5      runtime    MS-03
+
+================================================================================
+6. BASE DE DATOS
+================================================================================
+
+MYSQL (Puerto: 3306, configurado como 3307 en some servicios)
+└── db_auth (MS-03-Auth-Service)
+    └── users (tabla)
+        ├── id (BIGINT, PRIMARY KEY, AUTO_INCREMENT)
+        ├── email (VARCHAR(100), UNIQUE, NOT NULL)
+        ├── password (VARCHAR(255), NOT NULL)
+        ├── enabled (BOOLEAN)
+        └── role (VARCHAR(50))
+
+Otros servicios planificados:
+├── db_users (MS-04-User-Service)
+├── db_security (MS-05-Security-Service)
+├── db_courses (MS-06-Course-Service)
+├── db_lessons (MS-07-Lesson-Service)
+├── db_categories (MS-08-Category-Service)
+├── db_enrollments (MS-09-Enrollment-Service)
+├── db_progress (MS-10-Progress-Service)
+├── db_evaluations (MS-11-Evaluation-Service)
+└── db_certificates (MS-12-Certificate-Service)
+
+================================================================================
+7. RUTAS Y ENDPOINTS
+================================================================================
+
+GATEWAY (puerto 8080):
+├── /auth/** → lb://auth-service (puerto 8081)
+└── /users/** → lb://user-service (puerto 8082)
+
+AUTH-SERVICE (puerto 8081):
+├── POST /auth/login
+├── POST /auth/register
+├── GET /auth/validate
+└── POST /auth/refresh
+
+EUREKA (puerto 8761):
+└── /eureka/ (UI y API de registro de servicios)
+
+================================================================================
+8. FLUJOS DE COMUNICACION
+================================================================================
+
+FLUJO 1: REGISTRO DE SERVICIO
+1. MS-02-Gateway inicia → se registra en Eureka (puerto 8761)
+2. MS-03-Auth-Service inicia → se registra en Eureka
+3. Gateway descubre MS-03 automáticamente por nombre: "auth-service"
+4. Cualquier request a /auth/** se enruta a MS-03
+
+FLUJO 2: AUTENTICACION
+1. Usuario → POST http://localhost:8080/auth/login
+2. Gateway → identifica ruta /auth/** → enruta a lb://auth-service
+3. Auth-Service → AuthController.login()
+4. AuthController → AuthenticationManager.authenticate()
+5. AuthenticationManager → UserDetailServiceImpl.loadUserByUsername()
+6. UserDetailServiceImpl → UserRepository.findByEmail()
+7. Si válido → JwtUtil.generateToken()
+8. Response → { token: "...", role: "...", userId: ... }
+
+FLUJO 3: VALIDACION DE TOKEN (PENDIENTE)
+1. Cliente → GET http://localhost:8080/users/123
+2. Gateway → valida token JWT con Security-Service
+3. Si válido → enruta a user-service
+4. Si inválido → 401 Unauthorized
+
+================================================================================
+9. HERRAMIENTAS Y COMANDOS
+================================================================================
+
+COMPILAR UN SERVICIO:
+cd /Users/ajordanp/MyProjects/PlataformaCursos/ms-01-eureka
+mvn clean compile
+
+EJECUTAR UN SERVICIO:
+mvn spring-boot:run
+
+EMPAQUETAR A JAR:
+mvn package
+
+LIMPIAR Y RECONSTRUIR:
+mvn clean install
+
+TESTING:
+mvn test
+
+DEBUGGING:
+mvn spring-boot:run -DskipTests
+
+================================================================================
+10. SERVICIOS PENDIENTES DE IMPLEMENTACION
+================================================================================
+
+MS-04: user-service (puerto 8082)
+MS-05: security-service (puerto 8083)
+MS-06: category-service (puerto 8086)
+MS-07: course-service (puerto 8084)
+MS-08: lesson-service (puerto 8085)
+MS-09: enrollment-service (puerto 8087)
+MS-10: progress-service (puerto 8088)
+MS-11: evaluation-service (puerto 8089)
+MS-12: certificate-service (puerto 8090)
+
+================================================================================

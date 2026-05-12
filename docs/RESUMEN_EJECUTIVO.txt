@@ -1,0 +1,480 @@
+================================================================================
+                    RESUMEN EJECUTIVO - PLATAFORMA CURSOS
+                        Análisis de Estructura Completa
+================================================================================
+
+FECHA: 6 de Mayo de 2026
+UBICACION: /Users/ajordanp/MyProjects/PlataformaCursos
+DESARROLLADOR: Análisis automático del proyecto
+
+================================================================================
+1. VISION GENERAL DEL PROYECTO
+================================================================================
+
+NOMBRE: Plataforma de Cursos Online (Sistema de Microservicios)
+
+PROPOSITO:
+Sistema backend completo para una plataforma educativa tipo "mini-Coursera"
+que permite:
+  • Registro e identificación de usuarios (Estudiantes, Instructores, Admins)
+  • Gestión de cursos y contenido educativo
+  • Inscripción de estudiantes en cursos
+  • Seguimiento de progreso de aprendizaje
+  • Sistema de evaluaciones y calificaciones
+  • Generación automática de certificados
+
+ARQUITECTURA: Microservicios distribuidos con Spring Cloud
+
+ESCALA: 12 microservicios planificados (3 completados, 9 pendientes)
+
+================================================================================
+2. ESTADO ACTUAL DEL PROYECTO
+================================================================================
+
+FASE: Fase 1 - INFRAESTRUCTURA COMPLETADA
+        Fase 2-5 - PENDIENTES
+
+SERVICIOS COMPLETADOS:
+✓ MS-01: Eureka Server (Service Registry)
+✓ MS-02: API Gateway (Request Router)
+✓ MS-03: Auth Service (Autenticación + JWT)
+
+SERVICIOS PENDIENTES:
+⏳ MS-04: User Service (Gestión de usuarios)
+⏳ MS-05: Security Service (Roles y permisos)
+⏳ MS-06: Category Service (Categorización de cursos)
+⏳ MS-07: Course Service (Catálogo de cursos)
+⏳ MS-08: Lesson Service (Contenido de lecciones)
+⏳ MS-09: Enrollment Service (Inscripciones)
+⏳ MS-10: Progress Service (Seguimiento)
+⏳ MS-11: Evaluation Service (Evaluaciones)
+⏳ MS-12: Certificate Service (Certificados)
+
+ESTADISTICAS:
+• Archivos Java: 10 (todos en ms-03-auth-service)
+• Controladores: 1 (AuthController)
+• Servicios: 3 (UserDetailServiceImpl, DataInitializer, JwtUtil)
+• Repositorios: 1 (UserRepository)
+• Modelos: 1 (User)
+• Configuraciones: 2 (SecurityConfig, JwtUtil)
+• DTOs: 2 (LoginRequest, RegisterRequest)
+• Bases de datos: 1 activa (db_auth)
+
+================================================================================
+3. TECNOLOGIAS Y VERSIONES
+================================================================================
+
+JAVA Y FRAMEWORKS:
+├── Java: JDK 21
+├── Spring Boot: 4.0.6 (Eureka, Gateway) y 3.5.14 (Auth)
+├── Spring Cloud: 2025.1.1 (Eureka, Gateway) y 2025.0.2 (Auth)
+├── Maven: 3.x (con wrapper integrado)
+└── Lombok: Para reducción de boilerplate
+
+BASES DE DATOS:
+├── Motor: MySQL 8.0+
+├── Puerto: 3306 (3307 en algunas configs)
+└── Gestión: Hibernate JPA con DDL automático
+
+SEGURIDAD:
+├── Autenticación: Spring Security + JWT (JJWT)
+├── Encriptación: BCrypt para contraseñas
+├── Token: HS256 (HMAC-SHA256)
+└── Expiration: Configurable (actual: 1 hora)
+
+COMUNICACION ENTRE SERVICIOS:
+├── Síncrona: Feign Client (planificado, no implementado)
+├── Asíncrona: No implementada
+├── Service Discovery: Eureka (Netflix)
+└── Load Balancing: Ribbon (incluido en Eureka)
+
+RESILIENCIA:
+├── Circuit Breaker: Resilience4J (implementado en Gateway)
+├── Rate Limiting: No implementado
+└── Retry: No implementado
+
+================================================================================
+4. PUERTOS Y TOPOLOGIA DE RED
+================================================================================
+
+PUERTOS ASIGNADOS:
+
+8761  ← Eureka Server (Service Registry)
+       └─ UI: http://localhost:8761/eureka/
+
+8080  ← API Gateway (Entry Point)
+       └─ Enruta a todos los servicios
+
+8081  ← Auth Service (Autenticación)
+       └─ POST /auth/login
+       └─ POST /auth/register
+
+8082  ← User Service (Pendiente)
+8083  ← Security Service (Pendiente)
+8084  ← Course Service (Pendiente)
+8085  ← Lesson Service (Pendiente)
+8086  ← Category Service (Pendiente)
+8087  ← Enrollment Service (Pendiente)
+8088  ← Progress Service (Pendiente)
+8089  ← Evaluation Service (Pendiente)
+8090  ← Certificate Service (Pendiente)
+
+MYSQL: localhost:3306
+
+================================================================================
+5. FLUJO DE AUTENTICACION (IMPLEMENTADO)
+================================================================================
+
+PASO A PASO:
+
+1. CLIENTE hace POST a http://localhost:8080/auth/login
+   └─ Cuerpo: { "email": "user@example.com", "password": "pass123" }
+
+2. API GATEWAY (8080) recibe la solicitud
+   └─ Identifica ruta: /auth/** 
+   └─ Consulta Eureka por servicio: "auth-service"
+   └─ Enruta a: http://localhost:8081/auth/login
+
+3. AUTH-SERVICE (8081) recibe la solicitud en AuthController.login()
+   └─ Extrae credenciales del LoginRequest
+
+4. AuthenticationManager autentica credenciales
+   └─ Delega a UserDetailsService
+
+5. UserDetailServiceImpl.loadUserByUsername(email)
+   └─ Consulta UserRepository.findByEmail(email)
+   └─ Accede a BD: SELECT * FROM users WHERE email = ?
+
+6. Spring Security valida contraseña
+   └─ Compara contraseña en texto plano con hash BCrypt en BD
+   └─ Si coincide: Authentication exitosa
+
+7. JwtUtil.generateToken(username) genera JWT
+   └─ Algoritmo: HS256
+   └─ Claims: email, rol
+   └─ Expira: En 1 hora (3600000ms)
+
+8. AuthController devuelve respuesta
+   └─ { "token": "eyJhbGc...", "role": "ROLE_STUDENT", "userId": 5 }
+
+9. Cliente recibe token y lo guarda localmente
+   └─ Lo incluye en futuras requests: Authorization: Bearer <token>
+
+RESULTADO: Autenticación completada, usuario logueado
+
+================================================================================
+6. ESTRUCTURA DE ARCHIVOS DETALLADA
+================================================================================
+
+ms-03-auth-service/ (Ejemplo de estructura de un microservicio)
+├── pom.xml
+│   ├── spring-boot-starter-parent: 3.5.14
+│   ├── Dependencias de base de datos (JPA, MySQL)
+│   ├── Dependencias de seguridad (Spring Security)
+│   ├── Dependencias de JWT (JJWT v0.11.5)
+│   └── Dependencias de cloud (Eureka Client)
+│
+├── src/main/resources/
+│   └── application.properties
+│       ├── Nombre de aplicación: auth-service
+│       ├── Puerto: 8081
+│       ├── URL de BD: jdbc:mysql://localhost:3306/db_auth
+│       ├── Eureka server: http://localhost:8761/eureka/
+│       └── Secreto JWT y expiración
+│
+└── src/main/java/com/plataforma/ms_03_auth_service/
+    │
+    ├── Ms03AuthServiceApplication.java
+    │   └── @SpringBootApplication (punto de entrada)
+    │
+    ├── config/
+    │   ├── SecurityConfig.java
+    │   │   ├── @Configuration @EnableWebSecurity
+    │   │   ├── Bean: PasswordEncoder (BCrypt)
+    │   │   ├── Bean: SecurityFilterChain
+    │   │   └── Bean: AuthenticationManager
+    │   │
+    │   └── JwtUtil.java
+    │       ├── @Component
+    │       └── generateToken(String username): String
+    │
+    ├── controllers/
+    │   ├── AuthController.java
+    │   │   ├── POST /auth/login
+    │   │   └── POST /auth/register
+    │   │
+    │   ├── LoginRequest.java (DTO)
+    │   │   ├── email: String
+    │   │   └── password: String
+    │   │
+    │   └── RegisterRequest.java (DTO)
+    │       ├── email: String
+    │       ├── password: String
+    │       └── role: String
+    │
+    ├── models/
+    │   └── User.java (Entity)
+    │       ├── @Entity @Table(name = "users")
+    │       ├── id: Long (PK, AI)
+    │       ├── email: String (UNIQUE)
+    │       ├── password: String (encrypted)
+    │       ├── enabled: boolean
+    │       └── role: String
+    │
+    ├── repositories/
+    │   └── UserRepository.java
+    │       ├── extends JpaRepository<User, Long>
+    │       └── Optional<User> findByEmail(String email)
+    │
+    └── services/
+        ├── UserDetailServiceImpl.java
+        │   ├── implements UserDetailsService
+        │   └── loadUserByUsername(String username): UserDetails
+        │
+        └── DataInitializer.java
+            ├── implements CommandLineRunner
+            └── run(): Crea usuario ADMIN por defecto
+
+================================================================================
+7. BASE DE DATOS - TABLA USERS
+================================================================================
+
+Database: db_auth
+Table: users
+
+ESTRUCTURA:
+┌─────────┬──────────────┬──────────┬─────────────┬──────────────────┐
+│ Columna │ Tipo         │ Nulo     │ Clave       │ Extra            │
+├─────────┼──────────────┼──────────┼─────────────┼──────────────────┤
+│ id      │ BIGINT       │ NO       │ PRIMARY     │ AUTO_INCREMENT   │
+│ email   │ VARCHAR(100) │ NO       │ UNIQUE      │                  │
+│ password│ VARCHAR(255) │ NO       │             │                  │
+│ enabled │ TINYINT      │ SÍ       │             │                  │
+│ role    │ VARCHAR(50)  │ SÍ       │             │                  │
+└─────────┴──────────────┴──────────┴─────────────┴──────────────────┘
+
+DATOS INICIALES (Creados al arrancar):
+┌────┬───────────────────┬──────────────────────┬─────────┬──────────────┐
+│ id │ email             │ password             │ enabled │ role         │
+├────┼───────────────────┼──────────────────────┼─────────┼──────────────┤
+│ 1  │ admin@cursos.com  │ [BCrypt: admin123]   │ true    │ ROLE_ADMIN   │
+└────┴───────────────────┴──────────────────────┴─────────┴──────────────┘
+
+================================================================================
+8. ENDPOINTS ACTIVOS
+================================================================================
+
+GATEWAY (Puerto 8080):
+├── POST /auth/login
+│   Request: { "email": "...", "password": "..." }
+│   Response: { "token": "...", "role": "...", "userId": ... }
+│
+├── POST /auth/register
+│   Request: { "email": "...", "password": "...", "role": "..." }
+│   Response: { "message": "Usuario registrado exitosamente" }
+│
+└── GET /auth/validate (Planificado)
+    Request: Con Authorization header
+    Response: Validación de token
+
+EUREKA (Puerto 8761):
+└── GET /eureka/
+    └─ UI Dashboard con servicios registrados
+    └─ API de consultas en: /eureka/apps, /eureka/apps/{appName}, etc.
+
+================================================================================
+9. DEPENDENCIAS Y VULNERABILIDADES
+================================================================================
+
+DEPENDENCIAS CRITICAS:
+
+spring-boot-starter-security: 3.5.14
+├── Parches aplicados: Sí
+├── Estado: Actualizado
+└── Riesgo: BAJO
+
+spring-cloud-starter-netflix-eureka-client: 2025.0.2
+├── Parches aplicados: Sí
+├── Estado: Actualizado
+└── Riesgo: BAJO
+
+io.jsonwebtoken (JJWT): 0.11.5
+├── Parches aplicados: Sí
+├── Estado: Actualizado
+└── Riesgo: BAJO (HS256 es seguro para este caso)
+
+mysql-connector-j: Última en Maven Central
+├── Parches aplicados: Sí
+├── Estado: Actualizado
+└── Riesgo: BAJO
+
+VULNERABILIDADES CONOCIDAS:
+• Contraseña JWT en application.properties (debería usar variables de entorno)
+• Expiration JWT muy corta (1 hora) - Considerar: 24 horas
+• Sin refresh token (implementar en próximas fases)
+
+================================================================================
+10. CONSIDERACIONES DE SEGURIDAD
+================================================================================
+
+IMPLEMENTADO:
+✓ Hash BCrypt para contraseñas
+✓ JWT firmado con HS256
+✓ Session stateless (sin cookies)
+✓ CSRF disabled (necesario para API REST)
+✓ Spring Security framework integrado
+
+PENDIENTE:
+⏳ Refresh tokens (JWT revocation)
+⏳ Rate limiting en auth endpoints
+⏳ 2FA (Two-Factor Authentication)
+⏳ Blacklist de tokens revocados
+⏳ HTTPS/TLS en producción
+⏳ API Key authentication para servicios
+⏳ Validación de requests (sanitization)
+⏳ CORS configuration (actualmente permite todos)
+
+================================================================================
+11. PROXIMO PASO: MS-04 USER-SERVICE
+================================================================================
+
+El siguiente servicio a implementar sería MS-04: User Service (Puerto 8082)
+
+RESPONSABILIDADES:
+• CRUD de usuarios (perfil, datos personales)
+• Actualizar información de perfil
+• Consultar datos de usuario por ID
+• Gestionar estado (activo/inactivo)
+
+ESTRUCTURA RECOMENDADA:
+src/main/java/com/plataforma/ms_04_user_service/
+├── config/
+│   └── FeignClientConfig.java (para llamar a auth-service)
+├── controllers/
+│   ├── UserController.java
+│   ├── UserRequest.java
+│   └── UserResponse.java
+├── models/
+│   └── UserProfile.java
+├── repositories/
+│   └── UserProfileRepository.java
+├── services/
+│   └── UserService.java
+└── clients/
+    └── AuthServiceClient.java (Feign)
+
+BASES DE DATOS REQUERIDAS:
+Database: db_users
+├── users (copia sincronizada desde auth-service)
+├── user_profiles (datos adicionales)
+└── user_preferences (configuraciones)
+
+CONFIGURACION:
+server.port=8082
+spring.datasource.url=jdbc:mysql://localhost:3306/db_users
+eureka.instance.name=user-service
+
+ENDPOINTS:
+POST   /users              - Crear usuario
+GET    /users/{id}         - Obtener usuario por ID
+PUT    /users/{id}         - Actualizar usuario
+DELETE /users/{id}         - Eliminar usuario (soft delete)
+GET    /users/email/{email} - Buscar por email
+
+================================================================================
+12. DOCUMENTACION GENERADA
+================================================================================
+
+Se han generado los siguientes documentos en /docs/:
+
+1. ESTRUCTURA_PROYECTO.txt
+   └─ Detalles exhaustivos de:
+      • Estructura de carpetas
+      • Configuración de cada servicio
+      • Dependencias y versiones
+      • Componentes por capas
+      • Flujos de comunicación
+
+2. DIAGRAMA_ARQUITECTURA.txt
+   └─ Diagramas visuales de:
+      • Arquitectura general
+      • Flujos de autenticación
+      • Estructura interna de servicios
+      • Mapa de puertos
+      • Dependencias entre servicios
+
+3. PROYECTO_PLATAFORMA_CURSOS.md (Existente)
+   └─ Documentación oficial del proyecto
+
+4. PLAN_DESARROLLO.md (Existente)
+   └─ Plan de desarrollo por fases
+
+================================================================================
+13. RECOMENDACIONES FINALES
+================================================================================
+
+CORTO PLAZO (1-2 semanas):
+1. ✓ Completar MS-04: User Service (Gestión de usuarios)
+2. ✓ Completar MS-05: Security Service (Roles y permisos)
+3. ⚠️ Implementar interceptor JWT en Gateway
+4. ⚠️ Agregar validación de requests
+
+MEDIANO PLAZO (2-4 semanas):
+1. ⚠️ Completar servicios de negocio (MS-06 a MS-09)
+2. ⚠️ Implementar Feign Clients para comunicación inter-servicios
+3. ⚠️ Agregar logging centralizado (ELK Stack o similar)
+4. ⚠️ Implementar monitoreo (Prometheus + Grafana)
+
+LARGO PLAZO (4+ semanas):
+1. ⚠️ Completar evaluaciones y certificados
+2. ⚠️ Implementar cache distribuido (Redis)
+3. ⚠️ Agregar message queues (RabbitMQ/Kafka)
+4. ⚠️ Containerizar con Docker
+5. ⚠️ Orquestar con Kubernetes
+6. ⚠️ Pipeline CI/CD (GitHub Actions/Jenkins)
+
+MEJORAS DE SEGURIDAD:
+1. ⚠️ Mover secretos a .env o Vault
+2. ⚠️ Implementar refresh tokens
+3. ⚠️ Agregar rate limiting
+4. ⚠️ Configurar CORS restrictivo
+5. ⚠️ Agregar validación de inputs
+
+================================================================================
+14. COMANDOS UTILES
+================================================================================
+
+COMPILAR TODOS LOS SERVICIOS:
+cd /Users/ajordanp/MyProjects/PlataformaCursos
+for dir in ms-*; do cd $dir && mvn clean compile && cd ..; done
+
+EJECUTAR EUREKA SERVER:
+cd ms-01-eureka && mvn spring-boot:run
+
+EJECUTAR GATEWAY:
+cd ms-02-gateway && mvn spring-boot:run
+
+EJECUTAR AUTH SERVICE:
+cd ms-03-auth-service && mvn spring-boot:run
+
+PROBAR LOGIN (Una vez todos los servicios estén corriendo):
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@cursos.com","password":"admin123"}'
+
+PROBAR CON EL TOKEN RETORNADO:
+curl -X GET http://localhost:8080/users/123 \
+  -H "Authorization: Bearer <TOKEN_AQUI>"
+
+VER SERVICIOS REGISTRADOS EN EUREKA:
+http://localhost:8761/eureka/
+
+================================================================================
+
+FIN DEL RESUMEN EJECUTIVO
+
+Generado: 6 de Mayo de 2026
+Documentación: Clara y completa
+Próxima revisión: Después de completar MS-04
+
+================================================================================

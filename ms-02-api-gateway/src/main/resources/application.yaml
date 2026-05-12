@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ms-02-api-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: ms-03-auth-service
+              uri: http://localhost:8081
+              predicates:
+                - Path=/auth/**
+            - id: ms-04-user-service
+              uri: http://localhost:8082
+              predicates:
+                - Path=/users/**
+            - id: ms-05-category-service
+              uri: http://localhost:8083
+              predicates:
+                - Path=/categories/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+jwt:
+  secret: ZXN0YS1lcy1taS1jbGF2ZS1zZWNyZXRhLXN1cGVyLWxhcmdhLXBhcmEtcXVlLXNlYS1zZWd1cmEtMjAyNA==

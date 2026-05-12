@@ -1,0 +1,30 @@
+# Java
+target/
+*.class
+*.jar
+*.war
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+# OS
+.DS_Store
+Thumbs.db
+# Logs
+*.log
+logs/
+# Config local (NUNCA subir secrets)
+application-local.properties
+application-dev.properties
+.env
+*.env
+# Credentials
+credentials.json
+secrets.properties
