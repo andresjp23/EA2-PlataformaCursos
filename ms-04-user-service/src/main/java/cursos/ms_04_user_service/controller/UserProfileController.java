@@ -1,5 +1,7 @@
 package cursos.ms_04_user_service.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +34,12 @@ public class UserProfileController {
         ResponseEntity<UserProfileResponse> response =  ResponseEntity.ok(userProfileService.createProfile(request));
         log.info("Perfil creado exitosamente para email: {}", request.getEmail());
         return response;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<UserProfileResponse>> getAllProfiles (){
+        log.info("Obteniendo todos los perfiles.");
+        return ResponseEntity.ok(userProfileService.getAllProfiles());
     }
 
     // Obtener perfil por ID

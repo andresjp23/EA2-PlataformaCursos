@@ -1,5 +1,7 @@
 package cursos.ms_04_user_service.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import cursos.ms_04_user_service.dto.UserProfileRequest;
@@ -51,6 +53,14 @@ public class UserProfileService {
                 });
         log.debug("Perfil encontrado con ID: {}", id);
         return toResponse(profile);
+    }
+
+    // Listar todos los perfiles activos
+    public List<UserProfileResponse> getAllProfiles (){
+        log.info("Buscando todos los perfiles");
+        return userProfileRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     // Obtiene un perfil por el ID del usuario en el auth-service

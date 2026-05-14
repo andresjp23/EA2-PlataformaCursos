@@ -21,6 +21,18 @@ spring:
               uri: http://localhost:8083
               predicates:
                 - Path=/categories/**
+            - id: ms-06-lesson-service
+              uri: http://localhost:8084
+              predicates:
+                - Path=/lessons/**
+            - id: ms-07-course-service
+              uri: http://localhost:8085
+              predicates:
+                - Path=/courses/**
+            - id: ms-08-enrollment-service
+              uri: http://localhost:8086
+              predicates:
+                - Path=/enrollments/**
 
 eureka:
   client:
