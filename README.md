@@ -6,7 +6,98 @@ Backend completo de una plataforma educativa tipo "mini-Coursera" construido con
 
 ## Arquitectura
 
-[DIAGRAMA A INSERTAR AQUÍ]
+```mermaid
+graph TB
+    %% Estilos
+    classDef client fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef infra fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef complex fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+    classDef db fill:#f5f5f5,stroke:#616161,stroke-width:1px,stroke-dasharray: 5 5
+
+    %% Cliente
+    Client([Cliente<br/>Postman/Navegador]):::client
+
+    %% Infraestructura
+    Gateway[API Gateway<br/>:8080]:::infra
+    Eureka[Eureka Server<br/>:8761]:::infra
+
+    %% Servicios de Negocio
+    Auth[Auth Service<br/>:8081<br/>JWT Login/Register]:::service
+    User[User Service<br/>:8082<br/>Perfiles]:::service
+    Category[Category Service<br/>:8083<br/>Categorías]:::service
+    Lesson[Lesson Service<br/>:8084<br/>Lecciones]:::service
+    Course[Course Service<br/>:8085<br/>Cursos]:::service
+    Enrollment[Enrollment Service<br/>:8086<br/>Inscripciones]:::service
+    Progress[Progress Service<br/>:8087<br/>Progreso]:::service
+    Evaluation[Evaluation Service<br/>:8088<br/>Evaluaciones]:::service
+    Certificate[Certificate Service<br/>:8089<br/>Certificados]:::complex
+    Grade[Grade Service<br/>:8090<br/>Notas]:::service
+
+    %% Bases de Datos
+    DB1[(db_auth)]:::db
+    DB2[(db_users)]:::db
+    DB3[(db_categories)]:::db
+    DB4[(db_lessons)]:::db
+    DB5[(db_courses)]:::db
+    DB6[(db_enrollments)]:::db
+    DB7[(db_progress)]:::db
+    DB8[(db_evaluations)]:::db
+    DB9[(db_certificates)]:::db
+    DB10[(db_grades)]:::db
+
+    %% Conexiones HTTP Cliente
+    Client -->|HTTP Request| Gateway
+
+    %% Conexiones Gateway a Servicios
+    Gateway -->|/auth/**| Auth
+    Gateway -->|/users/**| User
+    Gateway -->|/categories/**| Category
+    Gateway -->|/lessons/**| Lesson
+    Gateway -->|/courses/**| Course
+    Gateway -->|/enrollments/**| Enrollment
+    Gateway -->|/progress/**| Progress
+    Gateway -->|/evaluations/**| Evaluation
+    Gateway -->|/certificates/**| Certificate
+    Gateway -->|/grades/**| Grade
+
+    %% Registro en Eureka
+    Gateway -.->|Registro| Eureka
+    Auth -.->|Registro| Eureka
+    User -.->|Registro| Eureka
+    Category -.->|Registro| Eureka
+    Lesson -.->|Registro| Eureka
+    Course -.->|Registro| Eureka
+    Enrollment -.->|Registro| Eureka
+    Progress -.->|Registro| Eureka
+    Evaluation -.->|Registro| Eureka
+    Certificate -.->|Registro| Eureka
+    Grade -.->|Registro| Eureka
+
+    %% Comunicaciones Feign
+    Enrollment -.->|Feign| Course
+    Enrollment -.->|Feign| User
+    Progress -.->|Feign| Lesson
+    Progress -.->|Feign| Course
+    Evaluation -.->|Feign| Course
+    Certificate -.->|Feign| User
+    Certificate -.->|Feign| Course
+    Certificate -.->|Feign| Progress
+    Certificate -.->|Feign| Evaluation
+    Certificate -.->|Feign| Grade
+
+    %% Conexiones a Bases de Datos
+    Auth --> DB1
+    User --> DB2
+    Category --> DB3
+    Lesson --> DB4
+    Course --> DB5
+    Enrollment --> DB6
+    Progress --> DB7
+    Evaluation --> DB8
+    Certificate --> DB9
+    Grade --> DB10
+```
 
 ---
 
