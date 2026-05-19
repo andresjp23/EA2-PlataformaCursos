@@ -7,7 +7,7 @@ Backend completo de una plataforma educativa tipo "mini-Coursera" construido con
 ## Arquitectura
 
 <p align="center">
-  <img src="docs/diagrama.svg" alt="Arquitectura de Microservicios" />
+  <img src="docs/diagrama.png" alt="Arquitectura de Microservicios" />
 </p>
 
 ---
