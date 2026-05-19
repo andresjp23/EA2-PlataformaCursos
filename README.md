@@ -152,6 +152,21 @@ EA2-PlataformaCursos/
 - MySQL 8.0+ (puerto 3306)
 - Maven
 
+### Configuración de MySQL
+
+Este proyecto implementa el patrón **database-per-service**, donde cada uno de los 12 microservicios utiliza su propia base de datos independiente.
+
+**Requisitos:**
+- MySQL 8.0+ corriendo en `localhost:3306`
+- Crear 12 bases de datos con los siguientes nombres:
+  `db_auth`, `db_users`, `db_categories`, `db_lessons`, `db_courses`, `db_enrollments`, `db_progress`, `db_evaluations`, `db_certificates`, `db_grades`
+
+**Notas:**
+- Las tablas se generan automáticamente al iniciar cada servicio gracias a JPA (`ddl-auto: update`)
+- Datos iniciales (roles: ADMIN, TEACHER, STUDENT) se deben cargar según la estructura documentada
+
+Para el detalle completo de todos los esquemas, tablas, columnas y constraints, consulta [`docs/resumen.md`](docs/resumen.md#estructura-de-base-de-datos).
+
 ### Inicio de Servicios
 
 **1. Iniciar Infraestructura:**
