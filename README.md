@@ -3,6 +3,10 @@
 Backend completo de una plataforma educativa tipo "mini-Coursera" construido con arquitectura de microservicios usando Spring Boot y Spring Cloud.
 
 ---
+## Video Demostrativo
+[![Ver video demostrativo](https://img.youtube.com/vi/_ULpL4u_7-M/maxresdefault.jpg)](https://youtu.be/_ULpL4u_7-M)
+
+---
 
 ## Arquitectura
 
@@ -207,7 +211,7 @@ Para información detallada sobre:
 - Flujos de Feign Client entre servicios
 - Bugs corregidos durante desarrollo
 
-Ver: [`docs/resumen.md`](docs/resumen.md)
+Ver: [`docs/resumen.md`](docs/RESUMEN.md)
 
 ---
 
