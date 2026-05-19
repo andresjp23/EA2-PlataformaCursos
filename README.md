@@ -169,7 +169,7 @@ Este proyecto implementa el patrón **database-per-service**, donde cada uno de 
 - Las tablas se generan automáticamente al iniciar cada servicio gracias a JPA (`ddl-auto: update`)
 - Datos iniciales (roles: ADMIN, TEACHER, STUDENT) se deben cargar según la estructura documentada
 
-Para el detalle completo de todos los esquemas, tablas, columnas y constraints, consulta [`docs/resumen.md`](docs/resumen.md#estructura-de-base-de-datos).
+Para el detalle completo de todos los esquemas, tablas, columnas y constraints, consulta [`docs/resumen.md`](docs/RESUMEN.md#estructura-de-base-de-datos).
 
 ### Inicio de Servicios
 
