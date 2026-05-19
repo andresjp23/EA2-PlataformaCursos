@@ -206,4 +206,4 @@ Ver: [`docs/resumen.md`](docs/resumen.md)
 
 ## Autor
 
-Proyecto Evaluación Parcial 2 - Desarrollo Fullstack
+Andrés Jordán - Proyecto Evaluación Parcial 2 - Desarrollo Fullstack
