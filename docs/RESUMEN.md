@@ -13,7 +13,8 @@ Este sistema permite:
 - **Inscripción** de estudiantes en cursos disponibles
 - **Seguimiento de progreso** del aprendizaje (lecciones secuenciales)
 - **Sistema de evaluaciones** con preguntas y calificaciones
-- **Generación automática de certificados** al aprobar cursos
+- **Registro de notas** de estudiantes en evaluaciones
+- **Generación automática de certificados** al aprobar cursos (progreso 100% + evaluación aprobada)
 
 ---
 
@@ -25,28 +26,23 @@ Este sistema permite:
 |----------|--------|--------|-------------|
 | `ms-01-eureka-server` | 8761 | ✅ Implementado | Service Registry - Registro central de todos los microservicios |
 | `ms-02-api-gateway` | 8080 | ✅ Implementado | Entry point único - Enruta peticiones a servicios, circuit breaker |
-| `ms-03-auth-service` | 8081 | ✅ Implementado | Autenticación JWT, login, registro, gestión de usuarios |
-| `ms-04-user-service` | 8082 | 🔄 Parcialmente | Gestión de perfiles de usuario (CRUD completo) |
-| `ms-05-category-service` | 8083 | ✅ Implementado | Gestión de categorías de cursos (CRUD completo) |
 
 ### Servicios de Negocio
 
 | Servicio | Puerto | Estado | Descripción |
 |----------|--------|--------|-------------|
-| `ms-06-lesson-service` | 8086 | ✅ Implementado | Contenido de lecciones (texto e imágenes) |
-| `ms-07-course-service` | 8087 | ✅ Implementado | Catálogo de cursos |
-| `ms-08-enrollment-service` | 8088 | ✅ Implementado | Inscripciones (Feign: course + user) |
+| `ms-03-auth-service` | 8081 | ✅ Implementado | Autenticación JWT, login, registro, gestión de usuarios |
+| `ms-04-user-service` | 8082 | ✅ Implementado | Gestión de perfiles de usuario (CRUD completo) |
+| `ms-05-category-service` | 8083 | ✅ Implementado | Gestión de categorías de cursos (CRUD completo) |
+| `ms-06-lesson-service` | 8084 | ✅ Implementado | Contenido de lecciones (texto e imágenes) |
+| `ms-07-course-service` | 8085 | ✅ Implementado | Catálogo de cursos |
+| `ms-08-enrollment-service` | 8086 | ✅ Implementado | Inscripciones (Feign: course + user) |
+| `ms-09-progress-service` | 8087 | ✅ Implementado | Seguimiento de progreso (Feign: lesson + course) |
+| `ms-10-evaluation-service` | 8088 | ✅ Implementado | Evaluaciones (Feign: course) |
+| `ms-11-certificate-service` | 8089 | ✅ Implementado | Certificados (Feign: user + course + progress + evaluation + grade) |
+| `ms-12-grade-service` | 8090 | ✅ Implementado | Registro de notas de estudiantes |
 
-**Pendientes - 4 servicios**
-
-| Servicio | Puerto | Descripción |
-|----------|--------|-------------|
-| `security-service` | 8084 | ~~Gestión de roles~~ (NO se implementa - roles en JWT) |
-| `course-service` | 8085 | ~~Catálogo de cursos~~ (implementado en ms-07) |
-| `enrollment-service` | 8088 | ~~Inscripciones~~ (implementado con Feign) |
-| `progress-service` | 8089 | Seguimiento de avance por curso |
-| `evaluation-service` | 8090 | Evaluaciones, exámenes y calificaciones |
-| `certificate-service` | 8091 | Generación y validación de certificados |
+**Total: 10 servicios de negocio + 2 de infraestructura = 12 microservicios**
 
 ---
 
@@ -55,19 +51,17 @@ Este sistema permite:
 ### Framework y Lenguaje
 
 - **Java**: JDK 21
-- **Spring Boot**:
-  - Eureka/Gateway: `4.0.6`
-  - Auth-service: `3.5.14`
-- **Spring Cloud**: `2025.1.1` (Eureka/Gateway) y `2025.0.2` (Auth)
+- **Spring Boot**: 3.5.14/3.5.15-SNAPSHOT
+- **Spring Cloud**: `2025.0.2`
 
 ### Bases de Datos
 
 | Componente | Detalle |
 |------------|---------|
 | Motor | MySQL 8.0+ |
-| Puerto | 3306 (algunos servicios usan 3307) |
+| Puerto | 3306 |
 | ORM | Hibernate JPA con DDL automático (`update`) |
-| Patrón | Database-per-microservice (10 bases de datos separadas) |
+| Patrón | Database-per-microservice (12 bases de datos separadas) |
 
 ### Infraestructura y Comunicación
 
@@ -75,7 +69,7 @@ Este sistema permite:
 |------------|------------|
 | Service Registry | Netflix Eureka |
 | API Gateway | Spring Cloud Gateway |
-| Comunicación inter-servicios | Feign Client (planificado) |
+| Comunicación inter-servicios | Feign Client |
 | Balanceo de carga | Ribbon + Eureka |
 | Circuit Breaker | Resilience4J |
 | Autenticación | JWT (JJWT 0.12.6) |
@@ -100,24 +94,19 @@ Este sistema permite:
 └─────────────┘     └──────────────┘     │  (8761)     │
                                          └─────────────┘
                                                │
-                    ┌──────────────────────────┴──────────────────────────┐
-                    ▼                          ▼                          ▼
-           ┌───────────────┐          ┌───────────────┐          ┌───────────────┐
-│ Auth Service │          │ User Service  │          │Category Svc   │
-            │   (8081)      │          │   (8082)      │          │   (8083)      │
-           └───────────────┘          └───────────────┘          └───────────────┘
-```
-
-### Comunicación Síncrona (Feign Client - Planificado)
-
-Los servicios se comunicarán mediante interfaces Feign:
-
-```java
-@FeignClient(name = "user-service", url = "http://localhost:8082")
-public interface UserClient {
-    @GetMapping("/users/{id}")
-    UserDTO getUserById(@PathVariable("id") Long id);
-}
+    ┌──────────────────────────────────────────┼──────────────────────────────────────────┐
+    ▼                                          ▼                                          ▼
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
+│  Auth   │    │  User   │    │Category │    │ Lesson  │    │ Course  │    │Enrollment│
+│ (8081)  │    │ (8082)  │    │ (8083)  │    │ (8084)  │    │ (8085)  │    │  (8086) │
+└─────────┘    └─────────┘    └─────────┘    └─────────┘    └─────────┘    └─────────┘
+                                                                    │
+    ┌────────────────────────────────────────────────────────────────┘
+    ▼                                          ▼                                          ▼
+┌─────────┐    ┌─────────┐    ┌──────────────────┐    ┌──────────────────┐
+│Progress │    │Evaluation│    │    Certificate   │    │      Grade       │
+│ (8087)  │    │ (8088)  │    │     (8089)       │    │     (8090)       │
+└─────────┘    └─────────┘    └──────────────────┘    └──────────────────┘
 ```
 
 ### Rutas del API Gateway
@@ -136,21 +125,35 @@ routes:
     uri: http://localhost:8083
     predicates:
       - Path=/categories/**
-- id: ms-07-course-service
-          uri: http://localhost:8087
-          predicates:
-            - Path=/courses/**
+  - id: ms-06-lesson-service
+    uri: http://localhost:8084
+    predicates:
+      - Path=/lessons/**
+  - id: ms-07-course-service
+    uri: http://localhost:8085
+    predicates:
+      - Path=/courses/**
   - id: ms-08-enrollment-service
-          uri: http://localhost:8088
-          predicates:
-            - Path=/enrollments/**
+    uri: http://localhost:8086
+    predicates:
+      - Path=/enrollments/**
+  - id: ms-09-progress-service
+    uri: http://localhost:8087
+    predicates:
+      - Path=/progress/**
+  - id: ms-10-evaluation-service
+    uri: http://localhost:8088
+    predicates:
+      - Path=/evaluations/**
+  - id: ms-11-certificate-service
+    uri: http://localhost:8089
+    predicates:
+      - Path=/certificates/**
+  - id: ms-12-grade-service
+    uri: http://localhost:8090
+    predicates:
+      - Path=/grades/**
 ```
-
-### Flujo de Descubrimiento
-
-1. Cada servicio se registra en Eureka al iniciar
-2. El Gateway consulta Eureka para descubrir servicios
-3. Load balancing automático entre instancias
 
 ---
 
@@ -163,16 +166,6 @@ routes:
 | POST | `/auth/login` | Login con username y password |
 | POST | `/auth/register` | Registro de nuevo usuario |
 
-**Request Login:**
-```json
-{ "username": "usuario@example.com", "password": "miPassword123" }
-```
-
-**Response:**
-```json
-{ "token": "eyJhbGciOiJIUzI1NiIs...", "role": "STUDENT" }
-```
-
 ### User Service (Puerto 8082)
 
 | Método | Endpoint | Descripción |
@@ -180,7 +173,6 @@ routes:
 | POST | `/users` | Crear perfil de usuario |
 | GET | `/users/{id}` | Obtener perfil por ID |
 | GET | `/users/auth/{authUserId}` | Obtener perfil por ID de auth-service |
-| GET | `/users/email/{email}` | Buscar perfil por email |
 | PUT | `/users/{id}` | Actualizar perfil |
 | DELETE | `/users/{id}` | Eliminar perfil (soft delete) |
 
@@ -190,33 +182,13 @@ routes:
 |--------|----------|-------------|
 | POST | `/categories` | Crear nueva categoría |
 | GET | `/categories` | Listar categorías activas |
-| GET | `/categories/all` | Listar todas las categorías (incluye inactivas) |
+| GET | `/categories/all` | Listar todas las categorías |
 | GET | `/categories/{id}` | Obtener categoría por ID |
 | PUT | `/categories/{id}` | Actualizar categoría |
 | DELETE | `/categories/{id}` | Eliminar categoría (soft delete) |
-| PATCH | `/categories/{id}/enable` | Reactivar categoría eliminada |
+| PATCH | `/categories/{id}/enable` | Reactivar categoría |
 
-**Request (POST/PUT):**
-```json
-{
-    "name": "Programación",
-    "description": "Cursos de desarrollo de software",
-    "icon": "💻"
-}
-```
-
-**Response:**
-```json
-{
-    "id": 1,
-    "name": "Programación",
-    "description": "Cursos de desarrollo de software",
-    "icon": "💻",
-    "active": true
-}
-```
-
-### Lesson Service (Puerto 8086)
+### Lesson Service (Puerto 8084)
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
@@ -226,33 +198,7 @@ routes:
 | PUT | `/lessons/{id}` | Actualizar lección |
 | DELETE | `/lessons/{id}` | Eliminar lección (soft delete) |
 
-**Request (POST/PUT):**
-```json
-{
-    "courseId": 1,
-    "title": "Introducción a Java",
-    "content": "Contenido de la lección...",
-    "videoUrl": "https://youtube.com/...",
-    "orderIndex": 1,
-    "durationMinutes": 15
-}
-```
-
-**Response:**
-```json
-{
-    "id": 1,
-    "courseId": 1,
-    "title": "Introducción a Java",
-    "content": "Contenido de la lección...",
-    "videoUrl": "https://youtube.com/...",
-    "orderIndex": 1,
-    "durationMinutes": 15,
-    "active": true
-}
-```
-
-### Course Service (Puerto 8087)
+### Course Service (Puerto 8085)
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
@@ -263,21 +209,8 @@ routes:
 | GET | `/courses/instructor/{instructorId}` | Listar cursos por instructor |
 | PUT | `/courses/{id}` | Actualizar curso |
 | DELETE | `/courses/{id}` | Eliminar curso (soft delete) |
-| PATCH | `/courses/{id}/enable` | Reactivar curso |
 
-**Request (POST/PUT):**
-```json
-{
-    "categoryId": 1,
-    "instructorId": 2,
-    "title": "Java Fundamentals",
-    "description": "Curso completo de Java desde cero",
-    "imageUrl": "https://example.com/java.jpg",
-    "price": 49.99
-}
-```
-
-### Enrollment Service (Puerto 8088) - CON FEIGN
+### Enrollment Service (Puerto 8086) - CON FEIGN
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
@@ -286,8 +219,65 @@ routes:
 | GET | `/enrollments/user/{userId}` | Listar inscripciones por usuario |
 | GET | `/enrollments/course/{courseId}` | Listar inscripciones por curso |
 | GET | `/enrollments` | Listar todas las inscripciones activas |
-| PATCH | `/enrollments/{id}/status?status=COMPLETED` | Actualizar estado |
+| PATCH | `/enrollments/{id}/status?status=X` | Actualizar estado |
 | DELETE | `/enrollments/{id}` | Cancelar inscripción (soft delete) |
+
+**Feign:** Valida curso (`course-service`) y usuario (`user-service`) antes de crear inscripción.
+
+### Progress Service (Puerto 8087) - CON FEIGN
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/progress` | Crear registro de progreso |
+| GET | `/progress/{id}` | Obtener progreso por ID |
+| GET | `/progress/user/{userId}/course/{courseId}` | Progreso específico |
+| GET | `/progress/user/{userId}` | Listar progresos de un usuario |
+| PATCH | `/progress/{id}/complete?lessonId=X` | Marcar lección completada |
+| PATCH | `/progress/{id}/status?status=X` | Actualizar estado |
+| DELETE | `/progress/{id}` | Eliminar progreso (soft delete) |
+
+### Evaluation Service (Puerto 8088) - CON FEIGN
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/evaluations` | Crear nueva evaluación |
+| GET | `/evaluations/{id}` | Obtener evaluación por ID |
+| GET | `/evaluations/course/{courseId}` | Listar evaluaciones por curso |
+| GET | `/evaluations` | Listar todas las evaluaciones activas |
+| PUT | `/evaluations/{id}` | Actualizar evaluación |
+| DELETE | `/evaluations/{id}` | Eliminar evaluación (soft delete) |
+
+**Feign:** Valida curso (`course-service`) antes de crear evaluación.
+
+### Certificate Service (Puerto 8089) - CON FEIGN
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/certificates` | Generar certificado (valida progreso + evaluación + nota) |
+| GET | `/certificates/{id}` | Obtener certificado por ID |
+| GET | `/certificates/code/{code}` | Obtener certificado por código único |
+| GET | `/certificates/user/{userId}` | Listar certificados de un usuario |
+| DELETE | `/certificates/{id}` | Revocar certificado (soft delete) |
+
+**Feign (5 servicios):**
+- `user-service` → Obtener nombre del estudiante
+- `course-service` → Obtener título del curso
+- `progress-service` → Verificar progreso 100% y estado COMPLETED
+- `evaluation-service` → Obtener evaluationId y passingScore
+- `grade-service` → Obtener nota del estudiante
+
+**Flujo completo:**
+```
+1. certificate-service recibe petición {userId, courseId}
+2. Feign → user-service.getUserById() → obtiene nombre estudiante
+3. Feign → course-service.getCourseById() → obtiene título curso
+4. Feign → progress-service.getProgress() → verifica 100% + COMPLETED
+5. Feign → evaluation-service.getEvaluationByCourse() → obtiene evaluationId
+6. Feign → grade-service.getGrade() → obtiene nota del estudiante
+7. Valida: nota >= passingScore
+8. Genera código único CERT-XXXXXXXX
+9. Guarda certificado y retorna
+```
 
 **Request (POST):**
 ```json
@@ -297,13 +287,49 @@ routes:
 }
 ```
 
-**Flujo Feign en POST /enrollments:**
+**Response:**
+```json
+{
+    "id": 1,
+    "userId": 1,
+    "studentName": "Juan Perez",
+    "courseId": 1,
+    "courseTitle": "Java Fundamentals",
+    "finalGrade": 85.0,
+    "issuedAt": "2026-05-18T10:30:00",
+    "certificateCode": "CERT-A1B2C3D4",
+    "active": true
+}
 ```
-1. enrollment-service recibe petición
-2. Feign → course-service.getCourseById(courseId) → valida que existe
-3. Feign → user-service.getUserById(userId) → valida que existe
-4. Si ambos existen → crear inscripción
-5. Si alguno falla → throw RuntimeException
+
+### Grade Service (Puerto 8090)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/grades` | Registrar nota de un estudiante |
+| GET | `/grades/{id}` | Obtener nota por ID |
+| GET | `/grades/student/{studentId}/evaluation/{evaluationId}` | Obtener nota específica |
+| GET | `/grades/student/{studentId}` | Listar todas las notas de un estudiante |
+
+**Request (POST):**
+```json
+{
+    "studentId": 1,
+    "evaluationId": 1,
+    "score": 85
+}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "studentId": 1,
+    "evaluationId": 1,
+    "score": 85,
+    "takenAt": "2026-05-18T10:30:00",
+    "active": true
+}
 ```
 
 ---
@@ -401,631 +427,174 @@ routes:
 | status | VARCHAR(50) | DEFAULT 'ACTIVE' |
 | isActive | BOOLEAN | DEFAULT TRUE |
 
----
+### db_progress (Progress Service)
 
-## 7. Modelos y Entidades Principales
+**Tabla: `progress`**
 
-### User.java (Auth Service)
+| Columna | Tipo | Constraints |
+|---------|------|-------------|
+| id | BIGINT | PRIMARY KEY, AUTO_INCREMENT |
+| userId | BIGINT | NOT NULL |
+| courseId | BIGINT | NOT NULL |
+| currentLessonId | BIGINT | NOT NULL |
+| completedLessons | INT | NOT NULL, DEFAULT 0 |
+| totalLessons | INT | NOT NULL, DEFAULT 0 |
+| progressPercentage | INT | NOT NULL, DEFAULT 0 |
+| status | VARCHAR(50) | DEFAULT 'ACTIVE' |
+| isActive | BOOLEAN | DEFAULT TRUE |
 
-```java
-@Entity
-@Table(name = "users")
-public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+### db_evaluations (Evaluation Service)
 
-    @Column(unique = true, nullable = false)
-    private String username;
+**Tabla: `evaluations`**
 
-    @Column(nullable = false)
-    private String password;
+| Columna | Tipo | Constraints |
+|---------|------|-------------|
+| id | BIGINT | PRIMARY KEY, AUTO_INCREMENT |
+| courseId | BIGINT | NOT NULL |
+| title | VARCHAR(255) | UNIQUE, NOT NULL |
+| description | TEXT | NOT NULL |
+| maxScore | INT | NOT NULL, DEFAULT 100 |
+| passingScore | INT | NOT NULL, DEFAULT 70 |
+| status | VARCHAR(50) | DEFAULT 'PUBLISHED' |
+| isActive | BOOLEAN | DEFAULT TRUE |
 
-    @Column(unique = true, nullable = false)
-    private String email;
+### db_certificates (Certificate Service)
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id")
-    private Role role;
-}
-```
+**Tabla: `certificates`**
 
-### Role.java (Auth Service)
+| Columna | Tipo | Constraints |
+|---------|------|-------------|
+| id | BIGINT | PRIMARY KEY, AUTO_INCREMENT |
+| userId | BIGINT | NOT NULL |
+| studentName | VARCHAR(200) | NOT NULL |
+| courseId | BIGINT | NOT NULL |
+| courseTitle | VARCHAR(255) | NOT NULL |
+| finalGrade | DOUBLE | NOT NULL |
+| issuedAt | DATETIME | NOT NULL |
+| certificateCode | VARCHAR(50) | UNIQUE, NOT NULL |
+| isActive | BOOLEAN | DEFAULT TRUE |
 
-```java
-@Entity
-@Table(name = "roles")
-public class Role {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+### db_grades (Grade Service)
 
-    @Column(unique = true, nullable = false)
-    private String name; // ADMIN, TEACHER, STUDENT
-}
-```
+**Tabla: `grades`**
 
-### UserProfile.java (User Service)
-
-```java
-@Entity
-@Table(name = "user_profiles")
-public class UserProfile {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(unique = true, nullable = false)
-    private Long authUserId; // Referencia al usuario en auth-service
-
-    @Column(nullable = false)
-    private String firstName;
-
-    @Column(nullable = false)
-    private String lastName;
-
-    @Column(unique = true, nullable = false)
-    private String email;
-
-    @Column
-    private String profilePicture;
-
-    @Column
-    private boolean isActive = true;
-}
-```
-
-### Category.java (Category Service)
-
-```java
-@Entity
-@Table(name = "categories")
-public class Category {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, unique = true)
-    private String name;
-
-    @Column(nullable = false)
-    private String description;
-
-    @Column
-    private String icon;
-
-    @Column
-    private boolean isActive = true;
-}
-```
-
-### Lesson.java (Lesson Service)
-
-```java
-@Entity
-@Table(name = "lessons")
-public class Lesson {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private Long courseId;
-
-    @Column(unique = true, nullable = false)
-    private String title;
-
-    @Column(nullable = false)
-    private String content;
-
-    @Column
-    private String videoUrl;
-
-    @Column
-    private Integer orderIndex;
-
-    @Column
-    private Integer durationMinutes;
-
-    @Column
-    private boolean isActive = true;
-}
-```
-
-### Course.java (Course Service)
-
-```java
-@Entity
-@Table(name = "courses")
-public class Course {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private Long categoryId;
-
-    @Column(nullable = false)
-    private Long instructorId;
-
-    @Column(unique = true, nullable = false)
-    private String title;
-
-    @Column(nullable = false)
-    private String description;
-
-    @Column
-    private String imageUrl;
-
-    @Column
-    private Double price;
-
-    @Column
-    private boolean isActive = true;
-}
-```
-
-### Enrollment.java (Enrollment Service)
-
-```java
-@Entity
-@Table(name = "enrollments")
-public class Enrollment {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private Long userId;
-
-    @Column(nullable = false)
-    private Long courseId;
-
-    @Column
-    private LocalDateTime enrolledAt;
-
-    @Column
-    private String status; // ACTIVE, COMPLETED, CANCELLED
-
-    @Column
-    private boolean isActive = true;
-}
-```
+| Columna | Tipo | Constraints |
+|---------|------|-------------|
+| id | BIGINT | PRIMARY KEY, AUTO_INCREMENT |
+| studentId | BIGINT | NOT NULL |
+| evaluationId | BIGINT | NOT NULL |
+| score | INT | NOT NULL (0-100) |
+| takenAt | DATETIME | NOT NULL |
+| isActive | BOOLEAN | DEFAULT TRUE |
 
 ---
 
-## 8. Seguridad Implementada
-
-### JWT (JSON Web Tokens)
-
-| Propiedad | Valor |
-|-----------|-------|
-| Algoritmo | HS256 (HMAC-SHA256) |
-| Secret | Configurado en `application.properties` |
-| Expiración | 86400000ms (24 horas) - configurable |
-
-### Flujo de Autenticación
-
-```
-1. Cliente ──▶ POST /auth/login {username, password}
-2. AuthController ──▶ AuthenticationManager.authenticate()
-3. UserDetailsServiceImpl ──▶ Busca usuario en BD
-4. Valida contraseña con BCrypt
-5. JwtService.generateToken(username, role) ──▶ Retorna token JWT con rol
-6. Cliente recibe {token: "eyJhbGciOiJIUzI1NiIs...", "role": "STUDENT"}
-7. Requests posteriores incluyen: Authorization: Bearer <token>
-```
-
-### JWT Claims
-
-El token JWT incluye el rol del usuario para authorization sin consultar auth-service:
-
-```json
-{
-  "sub": "usuario123",
-  "role": "STUDENT",
-  "iat": 1234567890,
-  "exp": 1234654290
-}
-```
-
-### Autorización con Roles
-
-Los roles se incluyen en el JWT token, permitiendo:
-- Validación de permisos sin consultar auth-service
-- @PreAuthorize("hasRole('ADMIN')") en endpoints protegidos
-- Ownership validation en servicios
-
-| Rol | Acceso |
-|-----|--------|
-| ADMIN | Endpoints de gestión (categorías, usuarios) |
-| TEACHER | Crear/editar cursos y lecciones propias |
-| STUDENT | Ver cursos, inscribirse, ver progreso |
-
-### Rutas Públicas vs Protegidas
-
-```java
-// SecurityConfig.java
-.requestMatchers("/auth/login", "/auth/register").permitAll()
-.anyRequest().authenticated()
-```
-
-### Filtro JWT en Gateway
-
-```java
-// JwtAuthenticationFilter.java
-// Rutas públicas: /auth/login, /auth/register
-// Valida token en header Authorization: Bearer <token>
-// 401 si token inválido o expirado
-```
-
----
-
-## 9. Estructura del Proyecto
-
-```
-EA2-PlataformaCursos/
-├── docs/
-│   ├── PROYECTO_PLATAFORMA_CURSOS.md
-│   ├── PLAN_DESARROLLO.md
-│   ├── ENDPOINTS_DOCUMENTACION.md
-│   ├── DIAGRAMA_ARQUITECTURA.txt
-│   ├── ESTRUCTURA_PROYECTO.txt
-│   └── RESUMEN_EJECUTIVO.txt
-│
-├── ms-01-eureka-server/
-│   ├── src/main/java/cursos/ms_01_eureka_server/
-│   │   └── Ms01EurekaServerApplication.java
-│   └── src/main/resources/application.properties
-│
-├── ms-02-api-gateway/
-│   ├── src/main/java/cursos/ms_02_api_gateway/
-│   │   ├── Ms02ApiGatewayApplication.java
-│   │   ├── config/GatewayConfig.java
-│   │   └── filter/JwtAuthenticationFilter.java
-│   └── src/main/resources/application.yaml
-│
-├── ms-03-auth-service/
-│   ├── src/main/java/cursos/ms_03_auth_service/
-│   │   ├── Ms03AuthServiceApplication.java
-│   │   ├── config/
-│   │   │   ├── SecurityConfig.java
-│   │   │   └── DataInitializer.java
-│   │   ├── controller/AuthController.java
-│   │   ├── dto/
-│   │   │   ├── LoginRequest.java
-│   │   │   ├── RegisterRequest.java
-│   │   │   └── AuthResponse.java
-│   │   ├── model/entity/
-│   │   │   ├── User.java
-│   │   │   └── Role.java
-│   │   ├── repository/
-│   │   │   ├── UserRepository.java
-│   │   │   └── RoleRepository.java
-│   │   ├── service/AuthService.java
-│   │   └── security/
-│   │       ├── filter/JwtAuthFilter.java
-│   │       └── jwt/JwtService.java
-│   └── src/main/resources/application.properties
-│
-├── ms-04-user-service/
-│   ├── src/main/java/cursos/ms_04_user_service/
-│   │   ├── Ms04UserServiceApplication.java
-│   │   ├── controller/UserProfileController.java
-│   │   ├── service/UserProfileService.java
-│   │   ├── repository/UserProfileRepository.java
-│   │   ├── model/entity/UserProfile.java
-│   │   ├── dto/
-│   │   │   ├── UserProfileRequest.java
-│   │   │   └── UserProfileResponse.java
-│   │   └── exception/
-│   │       ├── GlobalExceptionHandler.java
-│   │       └── ErrorResponse.java
-│   └── src/main/resources/application.properties
-│
-    └── ms-05-category-service/
-    ├── src/main/java/cursos/ms_05_category_service/
-    │   ├── Ms05CategoryServiceApplication.java
-    │   ├── model/entity/Category.java
-    │   ├── repository/CategoryRepository.java
-    │   ├── dto/
-    │   │   ├── CategoryRequest.java
-    │   │   └── CategoryResponse.java
-    │   ├── service/
-    │   │   └── CategoryService.java
-    │   ├── controller/
-    │   │   └── CategoryController.java
-    │   └── exception/
-    │       ├── ErrorResponse.java
-    │       └── GlobalExceptionHandler.java
-    └── src/main/resources/application.properties
-│
-└── ms-06-lesson-service/
-    ├── src/main/java/cursos/ms_06_lesson_service/
-    │   ├── Ms06LessonServiceApplication.java
-    │   ├── model/entity/Lesson.java
-    │   ├── repository/LessonRepository.java
-    │   ├── dto/
-    │   │   ├── LessonRequest.java
-    │   │   └── LessonResponse.java
-    │   ├── service/
-    │   │   └── LessonService.java
-    │   ├── controller/
-    │   │   └── LessonController.java
-│       └── exception/
-│           ├── ErrorResponse.java
-│           └── GlobalExceptionHandler.java
-    └── src/main/resources/application.properties
-│
-└── ms-07-course-service/
-    ├── src/main/java/cursos/ms_07_course_service/
-    │   ├── Ms07CourseServiceApplication.java
-    │   ├── model/entity/Course.java
-    │   ├── repository/CourseRepository.java
-    │   ├── dto/
-    │   │   ├── CourseRequest.java
-    │   │   └── CourseResponse.java
-    │   ├── service/
-    │   │   └── CourseService.java
-    │   ├── controller/
-    │   │   └── CourseController.java
-    │   └── exception/
-    │       ├── ErrorResponse.java
-    │       └── GlobalExceptionHandler.java
-    └── src/main/resources/application.properties
-│
-└── ms-08-enrollment-service/
-    ├── src/main/java/cursos/ms_08_enrollment_service/
-    │   ├── Ms08EnrollmentServiceApplication.java
-    │   ├── model/entity/Enrollment.java
-    │   ├── repository/EnrollmentRepository.java
-    │   ├── dto/
-    │   │   ├── EnrollmentRequest.java
-    │   │   └── EnrollmentResponse.java
-    │   ├── service/
-    │   │   └── EnrollmentService.java
-    │   ├── controller/
-    │   │   └── EnrollmentController.java
-    │   ├── client/
-    │   │   ├── CourseClient.java       ← Feign
-    │   │   └── UserClient.java          ← Feign
-    │   └── exception/
-    │       ├── ErrorResponse.java
-    │       └── GlobalExceptionHandler.java
-    └── src/main/resources/application.properties
-```
-
----
-
-## 10. Roles del Sistema
-
-| Rol | Descripción | Permisos |
-|-----|-------------|----------|
-| **ADMIN** | Gestor de la plataforma | Gestión completa de usuarios, categorías, reportes |
-| **TEACHER** | Creador de contenido | Crear/editar cursos, lecciones, evaluaciones propias |
-| **STUDENT** | Consumidor de contenido | Inscribirse, estudiar, rendir exámenes, descargar certificados |
-
----
-
-## 11. Configuraciones Clave
-
-### Eureka Server (`application.properties`)
-
-```properties
-spring.application.name=ms-01-eureka-server
-server.port=8761
-eureka.client.register-with-eureka=false
-eureka.client.fetch-registry=false
-```
-
-### API Gateway (`application.yaml`)
-
-```yaml
-server:
-  port: 8080
-spring:
-  cloud:
-    gateway:
-      routes:
-        - id: ms-03-auth-service
-          uri: http://localhost:8081
-          predicates:
-            - Path=/auth/**
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-jwt:
-  secret: ZXN0YS1lcy1taS1jbGF2ZS1zZWNyZXRh...
-```
-
-### Auth Service (`application.properties`)
-
-```properties
-spring.application.name=ms-03-auth-service
-server.port=8081
-spring.datasource.url=jdbc:mysql://localhost:3306/db_auth
-spring.datasource.username=root
-spring.datasource.password=
-spring.jpa.hibernate.ddl-auto=update
-eureka.client.service-url.defaultZone=http://localhost:8761/eureka/
-jwt.secret=ZXN0YS1lcy1taS1jbGF2ZS1zZWNyZXRh...
-jwt.expiration=86400000
-```
-
----
-
-## 12. Estado Actual
-
-### Servicios Implementados: 8 de 12
-
-- ✅ Eureka Server
-- ✅ API Gateway
-- ✅ Auth Service (funcional)
-- ✅ User Service (CRUD completo)
-- ✅ Category Service (CRUD completo)
-- ✅ Lesson Service (CRUD completo)
-- ✅ Course Service (CRUD completo)
-- ✅ Enrollment Service (CRUD + Feign)
-
-### Pendiente por Implementar (4 servicios)
-
-1. ~~Security Service~~ (NO se implementa - roles en JWT)
-2. ~~Course Service~~ (implementado en ms-07)
-3. ~~Enrollment Service~~ (implementado con Feign en ms-08)
-4. Progress Service (seguimiento)
-5. Evaluation Service (exámenes)
-6. Certificate Service (certificados)
-
----
-
-## 13. Feign Client - Comunicación entre Microservicios
-
-### Qué es Feign Client
-
-Feign es un **cliente HTTP declarativo** que permite que un microservicio se comunique con otro mediante interfaces Java, en lugar de escribir código HTTP bajo nivel.
-
-```
- enrollment-service              lesson-service
- ┌─────────────────┐           ┌─────────────────┐
- │                 │ ──GET/──▶ │                 │
- │ "¿Cuántas       │           │ "Aquí están     │
- │  lecciones      │ ◀─datos──│  las lecciones" │
- │  tiene el 1?"   │           │                 │
- └─────────────────┘           └─────────────────┘
-```
-
-### Cómo funciona (en concepto)
-
-1. Un servicio define una **interfaz** con `@FeignClient` que sabe cómo llamar a otro servicio
-2. El código llama métodos de esa interfaz como si fueran métodos locales
-3. Feign traduce esas llamadas a requests HTTP reales al otro servicio
+## 7. Feign Client - Comunicación entre Microservicios
 
 ### Servicios que se comunican entre sí
 
 | Quien llama | Llama a | Para qué |
 |-------------|---------|----------|
-| `enrollment-service` | `course-service` | Validar que el curso existe antes de inscribir |
+| `enrollment-service` | `course-service` | Validar que el curso existe |
 | `enrollment-service` | `user-service` | Validar que el estudiante existe |
-| `progress-service` | `lesson-service` | Saber cuántas lecciones tiene el curso |
-| `progress-service` | `course-service` | Vincular progreso con datos del curso |
-| `certificate-service` | `evaluation-service` | Verificar que el estudiante aprobó |
-| `certificate-service` | `course-service` | Obtener datos del curso para el certificado |
+| `progress-service` | `lesson-service` | Obtener cantidad de lecciones del curso |
+| `progress-service` | `course-service` | Validar que el curso existe |
+| `evaluation-service` | `course-service` | Validar que el curso existe |
+| `certificate-service` | `user-service` | Obtener nombre del estudiante |
+| `certificate-service` | `course-service` | Obtener título del curso |
+| `certificate-service` | `progress-service` | Verificar progreso 100% y COMPLETED |
+| `certificate-service` | `evaluation-service` | Obtener evaluationId y passingScore |
+| `certificate-service` | `grade-service` | Obtener nota del estudiante |
 
-### Ejemplo de interfaz Feign
-
-```java
-@FeignClient(name = "course-service", url = "http://localhost:8087")
-public interface CourseClient {
-    @GetMapping("/courses/{id}")
-    CourseResponse getCourseById(@PathVariable("id") Long id);
-}
-```
-
-### Estructura para implementar Feign
+### Flujo de negocio: Certificado
 
 ```
-ms-XX-service/
-├── client/                          # NUEVO: interfaces Feign
-│   ├── CourseClient.java
-│   └── UserClient.java
-├── service/
-│   └── AlgoService.java             # Usa los clients
-```
-
-### Dependencias necesarias
-
-```xml
-<dependency>
-    <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-starter-openfeign</artifactId>
-</dependency>
-```
-
-### Habilitar Feign en la aplicación
-
-```java
-@SpringBootApplication
-@EnableFeignClients  // <-- Anotación necesaria
-public class Ms0XServiceApplication { ... }
-```
-
-### Manejo de errores en llamadas Feign
-
-```java
-@Service
-public class EnrollmentService {
-    public void enrollStudent(Long userId, Long courseId) {
-        try {
-            CourseResponse course = courseClient.getCourseById(courseId);
-            // continuar con la inscripción
-        } catch (FeignException e) {
-            log.error("Error al consultar course-service: {}", e.getMessage());
-            throw new RuntimeException("No se pudo verificar el curso");
-        }
-    }
-}
+1. Estudiante solicita certificado del curso X
+2. certificate-service valida que NO existe certificado activo para ese usuario/curso
+3. certificate-service obtiene nombre del estudiante (user-service)
+4. certificate-service obtiene título del curso (course-service)
+5. certificate-service verifica progreso 100% y estado COMPLETED (progress-service)
+6. certificate-service obtiene evaluationId y passingScore (evaluation-service)
+7. certificate-service obtiene nota del estudiante (grade-service)
+8. certificate-service valida: nota >= passingScore
+9. Si todo válido → genera certificado con código único CERT-XXXXXXXX
+10. Retorna certificado con todos los datos
 ```
 
 ---
 
-## 14. Plan de Acción - Implementación de Servicios y Feign
+## 8. Estado Actual
 
-### Fase 1: Servicios base (Completados)
+### Servicios Implementados: 12 de 12
 
-| Servicio | Estado | Puerto |
-|----------|--------|--------|
-| ms-01-eureka-server | ✅ | 8761 |
-| ms-02-api-gateway | ✅ | 8080 |
-| ms-03-auth-service | ✅ | 8081 |
-| ms-04-user-service | ✅ | 8082 |
-| ms-05-category-service | ✅ | 8083 |
-| ms-06-lesson-service | ✅ | 8086 |
-| ms-07-course-service | ✅ | 8087 |
-
-### Fase 2: Próximos servicios con Feign
-
-| Orden | Servicio | Puerto | Feign a implementar |
-|-------|----------|--------|---------------------|
-| 1 | `progress-service` | 8089 | Consulta `lesson-service` + `course-service` |
-| 2 | `evaluation-service` | 8090 | Consulta `user-service` + `course-service` |
-| 3 | `certificate-service` | 8091 | Consulta `evaluation-service` + `course-service` |
-
-### Fase 3: Servicios completados con Feign
-
-| Servicio | Puerto | Feign implementado |
-|----------|--------|-------------------|
-| `enrollment-service` | 8088 | ✅ Consulta `course-service` + `user-service` |
-
-### Flujos de negocio a implementar
-
-**Inscripción (enrollment):**
-```
-1. Estudiante solicita inscripción en curso X
-2. enrollment-service valida que curso X existe (Feign → course-service)
-3. enrollment-service valida que estudiante Y existe (Feign → user-service)
-4. Se crea inscripción en BD local
-5. Se retorna confirmación
-```
-
-**Seguimiento de progreso (progress):**
-```
-1. Estudiante inicia curso X
-2. progress-service consulta lecciones del curso (Feign → lesson-service)
-3. progress-service obtiene datos del curso (Feign → course-service)
-4. Se crea registro de progreso en BD local
-5. Cada lección completada actualiza el progreso
-```
-
-**Generación de certificado (certificate):**
-```
-1. Estudiante solicita certificado del curso X
-2. certificate-service verifica aprobación (Feign → evaluation-service)
-3. certificate-service obtiene datos del curso (Feign → course-service)
-4. Se genera certificado en BD local
-5. Se retorna certificado
-```
+- ✅ Eureka Server (8761)
+- ✅ API Gateway (8080)
+- ✅ Auth Service (8081)
+- ✅ User Service (8082)
+- ✅ Category Service (8083)
+- ✅ Lesson Service (8084)
+- ✅ Course Service (8085)
+- ✅ Enrollment Service (8086) - con Feign
+- ✅ Progress Service (8087) - con Feign
+- ✅ Evaluation Service (8088) - con Feign
+- ✅ Certificate Service (8089) - con Feign (5 servicios)
+- ✅ Grade Service (8090)
 
 ### Checklist para cumplir rúbrica de evaluación
 
-- [ ] 10 microservicios implementados (contando los de infraestructura)
-- [ ] Comunicación Feign entre servicios de negocio
-- [ ] Manejo de errores en llamadas inter-servicios
-- [ ] Logs en cada llamada Feign
-- [ ] Base de datos propia por servicio
+- [x] 10+ microservicios implementados (12 totales)
+- [x] Comunicación Feign entre servicios de negocio
+- [x] Manejo de errores en llamadas inter-servicios (try/catch)
+- [x] Logs en cada llamada Feign (log.info, log.error)
+- [x] Base de datos propia por servicio (12 bases de datos)
+
+---
+
+## 11. Bugs Corregidos Durante las Pruebas
+
+Durante el proceso de pruebas con Postman, se descubrieron y corrigieron los siguientes bugs:
+
+| # | Bug | Servicio | Causa | Solución |
+|---|-----|----------|-------|----------|
+| 1 | `GET /lessons/course/{id}` retornaba error "Query did not return a unique result" | lesson-service | `findByCourseId` usaba `Optional<Lesson>` pero un curso tiene múltiples lecciones | Cambiado a `List<Lesson> findByCourseId(Long courseId)` |
+| 2 | `POST /progress` hardcodeaba `totalLessons = 0` | progress-service | El `LessonClient` estaba inyectado pero nunca se usaba | Agregado Feign call a lesson-service para obtener la cantidad real de lecciones |
+| 3 | `existsByUserIdAndCourseId` no filtraba por `isActive` | progress-service | Método original buscaba cualquier progreso sin importar estado | Agregado nuevo método `existsByUserIdAndCourseIdAndIsActiveTrue` |
+| 4 | `findByUserIdAndCourseId` no filtraba por `isActive` | progress-service | Retornaba progreso inactivo causando errores de unicidad | Agregado nuevo método `findByUserIdAndCourseIdAndIsActiveTrue` |
+| 5 | `EvaluationClient` retornaba objeto único pero endpoint retorna lista | certificate-service | El endpoint `/evaluations/course/{courseId}` retorna `List<EvaluationResponse>` | Cambiado tipo de retorno a `List<EvaluationResponse>` |
+
+---
+
+## 12. Roles del Sistema
+
+| Rol | Descripción | Permisos |
+|-----|-------------|----------|
+| **ADMIN** | Gestor de la plataforma | Gestión completa de usuarios, categorías, reportes |
+| **TEACHER** | Creador de contenido | Crear/editar cursos, lecciones, evaluaciones propias |
+| **STUDENT** | Consumidor de contenido | Inscribirse, estudiar, rendir exámenes, generar certificados |
+
+---
+
+## 13. Estructura del Proyecto
+
+```
+EA2-PlataformaCursos/
+├── docs/
+│   └── resumen.md                    ← Este documento
+│
+├── ms-01-eureka-server/             # Infraestructura
+├── ms-02-api-gateway/               # Infraestructura
+│
+├── ms-03-auth-service/              # Auth (8081)
+├── ms-04-user-service/              # Perfiles usuario (8082)
+├── ms-05-category-service/          # Categorías (8083)
+├── ms-06-lesson-service/            # Lecciones (8084)
+├── ms-07-course-service/            # Cursos (8085)
+├── ms-08-enrollment-service/        # Inscripciones (8086) + Feign
+├── ms-09-progress-service/          # Progreso (8087) + Feign
+├── ms-10-evaluation-service/        # Evaluaciones (8088) + Feign
+├── ms-11-certificate-service/       # Certificados (8089) + Feign (5 servicios)
+└── ms-12-grade-service/             # Notas estudiantes (8090)
+```
 
 ---
 
