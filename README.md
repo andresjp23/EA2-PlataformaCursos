@@ -7,6 +7,18 @@ Backend completo de una plataforma educativa tipo "mini-Coursera" construido con
 ## Arquitectura
 
 ```mermaid
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#ffffff',
+    'primaryTextColor': '#24292f',
+    'primaryBorderColor': '#24292f',
+    'lineColor': '#24292f',
+    'secondaryColor': '#f6f8fa',
+    'tertiaryColor': '#ffffff',
+    'background': '#ffffff'
+  }
+}%%
 graph TB
     %% Estilos
     classDef client fill:#e1f5ff,stroke:#01579b,stroke-width:2px
