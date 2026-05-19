@@ -196,7 +196,7 @@ Para información detallada sobre:
 - Flujos de Feign Client entre servicios
 - Bugs corregidos durante desarrollo
 
-Ver: [`docs/resumen.md`](docs/resumen.md)
+Ver: [`docs/resumen.md`](docs/RESUMEN.md)
 
 ---
 
