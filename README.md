@@ -3,11 +3,13 @@
 Backend completo de una plataforma educativa tipo "mini-Coursera" construido con arquitectura de microservicios usando Spring Boot y Spring Cloud.
 
 ---
+
 ## Arquitectura
 
 <p align="center">
   <img src="docs/diagrama.svg" alt="Arquitectura de Microservicios" />
 </p>
+
 ---
 
 ## Stack Tecnológico
