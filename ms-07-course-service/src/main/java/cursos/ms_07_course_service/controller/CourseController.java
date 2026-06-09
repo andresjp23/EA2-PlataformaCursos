@@ -14,6 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 import cursos.ms_07_course_service.dto.CourseRequest;
 import cursos.ms_07_course_service.dto.CourseResponse;
 import cursos.ms_07_course_service.service.CourseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,66 +30,101 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/courses")
 @RequiredArgsConstructor
+@Tag(name = "Cursos", description = "Gestión de cursos")
 public class CourseController {
 
     private final CourseService courseService;
 
-    // POST /courses - Crear nuevo curso
+    @Operation(summary = "Crear curso", description = "Crea un nuevo curso en el sistema")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Curso creado exitosamente",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = CourseResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Datos inválidos")
+    })
     @PostMapping
-    public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
+    public ResponseEntity<CourseResponse> createCourse(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del curso a crear", required = true, content = @Content(schema = @Schema(implementation = CourseRequest.class)))
+            @Valid @RequestBody CourseRequest request) {
         log.info("POST /courses -> Creando curso: {}", request.getTitle());
         CourseResponse response = courseService.createCourse(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // GET /courses - Listar todos los cursos activos
+    @Operation(summary = "Listar todos los cursos activos", description = "Retorna una lista de todos los cursos activos")
+    @ApiResponse(responseCode = "200", description = "Lista de cursos obtenida exitosamente")
     @GetMapping
     public ResponseEntity<List<CourseResponse>> getAllCourses() {
         log.info("GET /courses -> Obteniendo todos los cursos");
         return ResponseEntity.ok(courseService.getAllCourses());
     }
 
-    // GET /courses/{id} - Obtener curso por ID
+    @Operation(summary = "Obtener curso por ID", description = "Busca y retorna un curso por su ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Curso encontrado"),
+        @ApiResponse(responseCode = "404", description = "Curso no encontrado")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<CourseResponse> getCourseById(@PathVariable Long id) {
+    public ResponseEntity<CourseResponse> getCourseById(
+            @Parameter(description = "ID del curso", required = true) @PathVariable Long id) {
         log.info("GET /courses/{} - Obteniendo curso por ID", id);
         return ResponseEntity.ok(courseService.getCourseById(id));
     }
 
-    // GET /courses/category/{categoryId} - Obtener cursos por categoría
+    @Operation(summary = "Obtener cursos por categoría", description = "Retorna todos los cursos asociados a una categoría")
+    @ApiResponse(responseCode = "200", description = "Lista de cursos obtenida exitosamente")
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<CourseResponse>> getCoursesByCategory(@PathVariable Long categoryId) {
+    public ResponseEntity<List<CourseResponse>> getCoursesByCategory(
+            @Parameter(description = "ID de la categoría", required = true) @PathVariable Long categoryId) {
         log.info("GET /courses/category/{} - Obteniendo cursos por categoría", categoryId);
         return ResponseEntity.ok(courseService.getCoursesByCategory(categoryId));
     }
 
-    // GET /courses/instructor/{instructorId} - Obtener cursos por instructor
+    @Operation(summary = "Obtener cursos por instructor", description = "Retorna todos los cursos de un instructor")
+    @ApiResponse(responseCode = "200", description = "Lista de cursos obtenida exitosamente")
     @GetMapping("/instructor/{instructorId}")
-    public ResponseEntity<List<CourseResponse>> getCoursesByInstructor(@PathVariable Long instructorId) {
+    public ResponseEntity<List<CourseResponse>> getCoursesByInstructor(
+            @Parameter(description = "ID del instructor", required = true) @PathVariable Long instructorId) {
         log.info("GET /courses/instructor/{} - Obteniendo cursos por instructor", instructorId);
         return ResponseEntity.ok(courseService.getCoursesByInstructor(instructorId));
     }
 
-    // PUT /courses/{id} - Actualizar curso
+    @Operation(summary = "Actualizar curso", description = "Actualiza los datos de un curso existente")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Curso actualizado exitosamente",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = CourseResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Curso no encontrado")
+    })
     @PutMapping("/{id}")
     public ResponseEntity<CourseResponse> updateCourse(
-            @PathVariable Long id,
+            @Parameter(description = "ID del curso a actualizar", required = true) @PathVariable Long id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Nuevos datos del curso", required = true, content = @Content(schema = @Schema(implementation = CourseRequest.class)))
             @Valid @RequestBody CourseRequest request) {
         log.info("PUT /courses/{} - Actualizando curso", id);
         return ResponseEntity.ok(courseService.updateCourse(id, request));
     }
 
-    // DELETE /courses/{id} - Eliminar (soft delete) curso
+    @Operation(summary = "Eliminar curso", description = "Realiza un soft delete de un curso")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Curso eliminado exitosamente"),
+        @ApiResponse(responseCode = "404", description = "Curso no encontrado")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCourse(
+            @Parameter(description = "ID del curso a eliminar", required = true) @PathVariable Long id) {
         log.info("DELETE /courses/{} - Eliminando curso", id);
         courseService.deleteCourse(id);
         return ResponseEntity.noContent().build();
     }
-    
-    // PATCH /courses/{id}/enable - Reactivar curso
+
+    @Operation(summary = "Reactivar curso", description = "Reactiva un curso eliminado (soft delete)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Curso reactivado exitosamente",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = CourseResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Curso no encontrado")
+    })
     @PatchMapping("/{id}/enable")
-    public ResponseEntity<CourseResponse> enableCourse(@PathVariable Long id) {
+    public ResponseEntity<CourseResponse> enableCourse(
+            @Parameter(description = "ID del curso a reactivar", required = true) @PathVariable Long id) {
         log.info("PATCH /courses/{}/enable - Reactivando curso", id);
         return ResponseEntity.ok(courseService.enableCourse(id));
     }

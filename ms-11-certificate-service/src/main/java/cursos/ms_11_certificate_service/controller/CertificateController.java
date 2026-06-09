@@ -15,6 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 import cursos.ms_11_certificate_service.dto.CertificateRequest;
 import cursos.ms_11_certificate_service.dto.CertificateResponse;
 import cursos.ms_11_certificate_service.service.CertificateService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +30,20 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/certificates")
 @RequiredArgsConstructor
+@Tag(name = "Certificados", description = "Gestión de certificados")
 public class CertificateController {
 
     private final CertificateService certificateService;
 
-    // POST /certificates - Genera un nuevo certificado
+    @Operation(summary = "Generar certificado", description = "Genera un nuevo certificado para un usuario que completó un curso")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Certificado generado exitosamente",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = CertificateResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Datos inválidos")
+    })
     @PostMapping
     public ResponseEntity<CertificateResponse> generateCertificate(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del certificado a generar", required = true, content = @Content(schema = @Schema(implementation = CertificateRequest.class)))
             @Valid @RequestBody CertificateRequest request) {
         log.info("POST /certificates -> Generando certificado para user: {} course: {}",
                 request.getUserId(), request.getCourseId());
@@ -37,30 +51,47 @@ public class CertificateController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // GET /certificates/{id} - Obtiene certificado por ID
+    @Operation(summary = "Obtener certificado por ID", description = "Busca y retorna un certificado por su ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Certificado encontrado"),
+        @ApiResponse(responseCode = "404", description = "Certificado no encontrado")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<CertificateResponse> getCertificateById(@PathVariable Long id) {
+    public ResponseEntity<CertificateResponse> getCertificateById(
+            @Parameter(description = "ID del certificado", required = true) @PathVariable Long id) {
         log.info("GET /certificates/{} - Obteniendo certificado por ID", id);
         return ResponseEntity.ok(certificateService.getCertificateById(id));
     }
 
-    // GET /certificates/code/{code} - Obtiene certificado por codigo unico
+    @Operation(summary = "Obtener certificado por código", description = "Busca un certificado usando su código único")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Certificado encontrado"),
+        @ApiResponse(responseCode = "404", description = "Certificado no encontrado")
+    })
     @GetMapping("/code/{code}")
-    public ResponseEntity<CertificateResponse> getCertificateByCode(@PathVariable String code) {
+    public ResponseEntity<CertificateResponse> getCertificateByCode(
+            @Parameter(description = "Código único del certificado", required = true) @PathVariable String code) {
         log.info("GET /certificates/code/{} - Obteniendo certificado por codigo", code);
         return ResponseEntity.ok(certificateService.getCertificateByCode(code));
     }
 
-    // GET /certificates/user/{userId} - Lista certificados de un usuario
+    @Operation(summary = "Obtener certificados por usuario", description = "Retorna todos los certificados de un usuario")
+    @ApiResponse(responseCode = "200", description = "Lista de certificados obtenida exitosamente")
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<CertificateResponse>> getCertificatesByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<CertificateResponse>> getCertificatesByUser(
+            @Parameter(description = "ID del usuario", required = true) @PathVariable Long userId) {
         log.info("GET /certificates/user/{} - Obteniendo certificados del usuario", userId);
         return ResponseEntity.ok(certificateService.getCertificatesByUser(userId));
     }
 
-    // DELETE /certificates/{id} - Revoca un certificado
+    @Operation(summary = "Revocar certificado", description = "Revoca un certificado del sistema")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Certificado revocado exitosamente"),
+        @ApiResponse(responseCode = "404", description = "Certificado no encontrado")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> revokeCertificate(@PathVariable Long id) {
+    public ResponseEntity<Void> revokeCertificate(
+            @Parameter(description = "ID del certificado a revocar", required = true) @PathVariable Long id) {
         log.info("DELETE /certificates/{} - Revocando certificado", id);
         certificateService.revokeCertificate(id);
         return ResponseEntity.noContent().build();
