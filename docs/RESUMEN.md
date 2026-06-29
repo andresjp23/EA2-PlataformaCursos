@@ -598,4 +598,104 @@ EA2-PlataformaCursos/
 
 ---
 
+---
+
+## 14. Despliegue con Docker
+
+El proyecto está preparado para ejecutarse con **Docker Compose**, levantando los 12 microservicios + MySQL en contenedores aislados.
+
+### Requisitos
+
+- Docker Desktop (Windows/Mac) o Docker Engine (Linux)
+- No requiere instalar Java, Maven ni MySQL localmente
+
+### Estructura de entrega
+
+```
+entrega-cliente/
+├── apps/                          # Archivos .jar compilados
+│   ├── ms-01-eureka-server.jar
+│   ├── ms-02-api-gateway.jar
+│   ├── ms-03-auth-service.jar
+│   ├── ms-04-user-service.jar
+│   ├── ms-05-category-service.jar
+│   ├── ms-06-lesson-service.jar
+│   ├── ms-07-course-service.jar
+│   ├── ms-08-enrollment-service.jar
+│   ├── ms-09-progress-service.jar
+│   ├── ms-10-evaluation-service.jar
+│   ├── ms-11-certificate-service.jar
+│   └── ms-12-grade-service.jar
+├── docs/
+│   └── init.sql                   # Inicialización automática de bases de datos
+├── docker-compose.yml             # Orquestación de contenedores
+├── arrancar-sistema.bat           # "Doble clic" para Windows
+├── arrancar-sistema.sh            # "Doble clic" para Linux/Mac
+├── detener-sistema.bat
+├── detener-sistema.sh
+└── ver-logs.sh
+```
+
+### Cómo compilar los .jar
+
+Desde la raíz del proyecto (con código fuente):
+
+```bash
+./mvnw clean package -DskipTests
+```
+
+Luego copiar los archivos `target/*.jar` de cada módulo a la carpeta `apps/`.
+
+### Cómo ejecutar
+
+**Opción 1 — Un clic:**
+- Windows: Doble clic en `arrancar-sistema.bat`
+- Linux/Mac: `./arrancar-sistema.sh`
+
+**Opción 2 — Manual:**
+```bash
+docker compose up -d
+```
+
+### Orden de arranque
+
+Los contenedores se levantan en este orden automáticamente:
+
+1. **MySQL** — Base de datos (espera hasta que esté saludable)
+2. **Eureka Server** — Service registry
+3. **Microservicios de negocio** (ms-03 a ms-12) — Se registran en Eureka
+4. **API Gateway** — Punto de entrada único
+
+### Perfiles Docker
+
+Cada microservicio tiene un perfil `docker` que sobrescribe las conexiones:
+
+| Propiedad | Desarrollo (default) | Docker |
+|-----------|---------------------|--------|
+| `spring.datasource.url` | `localhost:3306/db_xxx` | `mysql-db:3306/db_xxx` |
+| `eureka.client.service-url.defaultZone` | `localhost:8761/eureka/` | `eureka-server:8761/eureka/` |
+| `spring.datasource.password` | (vacío) | `root` |
+
+Se activa automáticamente vía `SPRING_PROFILES_ACTIVE=docker` en el `docker-compose.yml`.
+
+### Comandos útiles
+
+```bash
+# Ver logs en vivo
+docker compose logs -f
+
+# Ver estado de contenedores
+docker compose ps
+
+# Detener sistema (conserva datos)
+docker compose down
+
+# Detener sistema y borrar datos
+docker compose down -v
+```
+
+> **Nota:** `docker compose down -v` elimina los volúmenes de MySQL, perdiendo todos los datos. Usar con precaución.
+
+---
+
 > Este proyecto es un sistema completo de microservicios con Spring Boot, siguiendo las mejores prácticas de arquitectura distribuida con service discovery, API gateway, autenticación JWT y bases de datos separadas por servicio.

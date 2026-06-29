@@ -3,8 +3,13 @@
 Backend completo de una plataforma educativa tipo "mini-Coursera" construido con arquitectura de microservicios usando Spring Boot y Spring Cloud.
 
 ---
-## Video Demostrativo
-[![Ver video demostrativo](https://img.youtube.com/vi/_ULpL4u_7-M/maxresdefault.jpg)](https://youtu.be/_ULpL4u_7-M)
+
+## 📦 COMPONENTES DE DISTRIBUCIÓN Y DEFENSA TÉCNICA
+
+| Componente | Descripción | Enlace de Descarga (Nube externa) |
+| :--- | :--- | :--- |
+| **🐳 Versión Con Docker**<br>*(Avance Examen Transversal)* | Archivo `.zip` que contiene la carpeta `apps/` con los `.jar`, el archivo `docker-compose.yml` y los scripts automatizados `arrancar-sistema.bat/.sh`. | [Descargar ZIP Docker aquí](https://drive.google.com/uc?export=download&id=1c2VdSft0CKTVFPG1sqVtysYhoXPxuqEu) |
+| **🎥 Video de Defensa Técnica**<br>*(Evaluación Individual)* | Enlace directo al video explicativo donde se evidencia el funcionamiento, testing y el aporte técnico individual. **Duración ideal: 15 minutos (Máximo permitido: 18 minutos).** | [Ver video de defensa técnica](https://drive.google.com/uc?export=download&id=16AiWz1qVBecx8tiaZQKDK8KhhgO5Sndy) |
 
 ---
 
@@ -25,8 +30,9 @@ Backend completo de una plataforma educativa tipo "mini-Coursera" construido con
 | **Cloud** | Spring Cloud 2025.0.2 (Eureka, Gateway, OpenFeign) |
 | **Base de datos** | MySQL 8.0 (12 bases separadas, una por microservicio) |
 | **Seguridad** | JWT (JJWT 0.12.6) + BCrypt |
-| **Build** | Maven |
+| **Build** | Maven (Multi-Module) |
 | **Utilidades** | Lombok, Jakarta Bean Validation |
+| **Documentación API** | Swagger / OpenAPI (SpringDoc) |
 
 ---
 
@@ -116,6 +122,60 @@ El servicio de certificados es el más complejo, coordinando **5 llamadas Feign*
 
 ---
 
+## Documentación de API (Swagger / OpenAPI)
+
+Los 10 servicios de negocio están documentados con **Swagger UI** mediante SpringDoc. Accede a la interfaz interactiva de cada servicio en:
+
+| Servicio | URL de Swagger UI |
+|----------|-------------------|
+| `ms-03-auth-service` | `http://localhost:8081/doc/swagger-ui.html` |
+| `ms-04-user-service` | `http://localhost:8082/doc/swagger-ui.html` |
+| `ms-05-category-service` | `http://localhost:8083/doc/swagger-ui.html` |
+| `ms-06-lesson-service` | `http://localhost:8084/doc/swagger-ui.html` |
+| `ms-07-course-service` | `http://localhost:8085/doc/swagger-ui.html` |
+| `ms-08-enrollment-service` | `http://localhost:8086/doc/swagger-ui.html` |
+| `ms-09-progress-service` | `http://localhost:8087/doc/swagger-ui.html` |
+| `ms-10-evaluation-service` | `http://localhost:8088/doc/swagger-ui.html` |
+| `ms-11-certificate-service` | `http://localhost:8089/doc/swagger-ui.html` |
+| `ms-12-grade-service` | `http://localhost:8090/doc/swagger-ui.html` |
+
+> **Nota:** Los servicios de infraestructura (`eureka-server`, `api-gateway`) no tienen Swagger configurado.
+
+---
+
+## Tests Unitarios
+
+El proyecto cuenta con **32 archivos de tests unitarios** distribuidos en 11 de los 12 microservicios, validando la capa de Controller y Service.
+
+### Cobertura de Tests por Módulo
+
+| Microservicio | Tests de Aplicación | Tests de Controller | Tests de Service |
+|---------------|---------------------|---------------------|------------------|
+| `ms-01-eureka-server` | ✅ | - | - |
+| `ms-02-api-gateway` | ✅ | - | - |
+| `ms-03-auth-service` | ✅ | ✅ | ✅ |
+| `ms-04-user-service` | ✅ | ✅ | ✅ |
+| `ms-05-category-service` | ✅ | ✅ | ✅ |
+| `ms-06-lesson-service` | ✅ | ✅ | ✅ |
+| `ms-07-course-service` | ✅ | ✅ | ✅ |
+| `ms-08-enrollment-service` | ✅ | ✅ | ✅ |
+| `ms-09-progress-service` | ✅ | ✅ | ✅ |
+| `ms-10-evaluation-service` | ✅ | ✅ | ✅ |
+| `ms-11-certificate-service` | ✅ | ✅ | ✅ |
+| `ms-12-grade-service` | ✅ | ✅ | ✅ |
+
+### Cómo Ejecutar los Tests
+
+```bash
+# Ejecutar todos los tests desde la raíz del proyecto
+./mvnw test
+
+# Ejecutar tests de un módulo específico
+cd ms-03-auth-service && ./mvnw test
+```
+
+---
+
 ## Comunicación entre Microservicios
 
 | Servicio Origen | Servicios Destino | Propósito |
@@ -127,24 +187,39 @@ El servicio de certificados es el más complejo, coordinando **5 llamadas Feign*
 
 ---
 
-## Estructura del Proyecto
+## Estructura del Proyecto (Multi-Módulos)
+
+El proyecto está organizado como un **proyecto Maven multi-módulo**, con un `pom.xml` padre en la raíz que gestiona las dependencias y versiones comunes para todos los microservicios.
 
 ```
 EA2-PlataformaCursos/
-├── ms-01-eureka-server/          # Service Registry
-├── ms-02-api-gateway/            # API Gateway
-├── ms-03-auth-service/           # Autenticación (8081)
-├── ms-04-user-service/           # Perfiles (8082)
+├── pom.xml                       # POM Parent - Gestión de dependencias y módulos
+├── ms-01-eureka-server/          # Infraestructura
+├── ms-02-api-gateway/            # Infraestructura
+├── ms-03-auth-service/           # Auth (8081)
+├── ms-04-user-service/           # Perfiles usuario (8082)
 ├── ms-05-category-service/       # Categorías (8083)
 ├── ms-06-lesson-service/         # Lecciones (8084)
 ├── ms-07-course-service/         # Cursos (8085)
 ├── ms-08-enrollment-service/     # Inscripciones (8086) + Feign
 ├── ms-09-progress-service/       # Progreso (8087) + Feign
 ├── ms-10-evaluation-service/     # Evaluaciones (8088) + Feign
-├── ms-11-certificate-service/    # Certificados (8089) + Feign x5
-├── ms-12-grade-service/          # Notas (8090)
+├── ms-11-certificate-service/    # Certificados (8089) + Feign (5 servicios)
+├── ms-12-grade-service/          # Notas estudiantes (8090)
 └── docs/
     └── resumen.md                # Documentación completa
+```
+
+### Compilación desde la Raíz
+
+Puedes compilar y verificar todo el proyecto desde el directorio raíz:
+
+```bash
+# Compilar todos los módulos
+./mvnw clean install
+
+# Compilar sin ejecutar tests
+./mvnw clean install -DskipTests
 ```
 
 ---
@@ -191,6 +266,30 @@ Acceder a `http://localhost:8761` para confirmar que los 12 servicios están reg
 
 ---
 
+### Despliegue con Docker (Recomendado)
+
+La forma más simple de ejecutar el sistema completo es con Docker. No requiere instalar Java, Maven ni MySQL localmente.
+
+```bash
+# Compilar los .jar (solo la primera vez o tras cambios)
+./mvnw clean package -DskipTests
+
+# Iniciar todo el sistema (MySQL + 12 microservicios)
+docker compose up -d
+```
+
+**Scripts de "un clic":**
+- Windows: Doble clic en `arrancar-sistema.bat`
+- Linux/Mac: `./arrancar-sistema.sh`
+
+**URLs principales:**
+- API Gateway: `http://localhost:8080`
+- Eureka Server: `http://localhost:8761`
+
+Ver documentación completa en [`docs/resumen.md`](docs/RESUMEN.md#14-despliegue-con-docker).
+
+---
+
 ## Características Técnicas Destacadas
 
 - **Database-per-Service:** Cada microservicio tiene su propia base de datos MySQL separada
@@ -200,6 +299,9 @@ Acceder a `http://localhost:8761` para confirmar que los 12 servicios están reg
 - **Seguridad:** JWT para autenticación stateless
 - **Soft Delete:** Eliminación lógica en todas las entidades para mantener integridad de datos
 - **Validación:** Bean Validation en todos los DTOs de entrada
+- **Testing:** Tests unitarios con JUnit 5 y Mockito en la mayoría de los servicios
+- **Documentación API:** Swagger / OpenAPI (SpringDoc) en todos los servicios de negocio
+- **Despliegue:** Docker Compose con 13 contenedores (MySQL + 12 microservicios)
 
 ---
 
@@ -222,9 +324,12 @@ Ver: [`docs/resumen.md`](docs/RESUMEN.md)
 - Manejo de errores en llamadas inter-servicios
 - Logs en cada llamada Feign
 - Base de datos propia por servicio
+- Tests unitarios en 11 de 12 módulos
+- Documentación Swagger en 10 de 12 módulos
+- Despliegue Docker Compose listo (13 contenedores orquestados)
 
 ---
 
 ## Autor
 
-Andrés Jordán - Proyecto Evaluación Parcial 2 - Desarrollo Fullstack
+Andrés Jordán - Proyecto Evaluación Parcial 3 (EP3) - Desarrollo Fullstack

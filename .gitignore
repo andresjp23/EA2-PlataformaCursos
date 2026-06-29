@@ -28,3 +28,4 @@ application-dev.properties
 # Credentials
 credentials.json
 secrets.properties
+*.zip

@@ -1,0 +1,61 @@
+# Perfil Docker - Sobrescribe localhost con nombres de contenedores
+
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: ms-03-auth-service
+              uri: http://ms-03-auth-service:8081
+              predicates:
+                - Path=/auth/**
+            - id: ms-04-user-service
+              uri: http://ms-04-user-service:8082
+              predicates:
+                - Path=/users/**
+            - id: ms-05-category-service
+              uri: http://ms-05-category-service:8083
+              predicates:
+                - Path=/categories/**
+            - id: ms-06-lesson-service
+              uri: http://ms-06-lesson-service:8084
+              predicates:
+                - Path=/lessons/**
+            - id: ms-07-course-service
+              uri: http://ms-07-course-service:8085
+              predicates:
+                - Path=/courses/**
+            - id: ms-08-enrollment-service
+              uri: http://ms-08-enrollment-service:8086
+              predicates:
+                - Path=/enrollments/**
+            - id: ms-09-progress-service
+              uri: http://ms-09-progress-service:8087
+              predicates:
+                - Path=/progress/**
+            - id: ms-10-evaluation-service
+              uri: http://ms-10-evaluation-service:8088
+              predicates:
+                - Path=/evaluations/**
+            - id: ms-11-certificate-service
+              uri: http://ms-11-certificate-service:8089
+              predicates:
+                - Path=/certificates/**
+            - id: ms-12-grade-service
+              uri: http://ms-12-grade-service:8090
+              predicates:
+                - Path=/grades/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+jwt:
+  secret: ZXN0YS1lcy1taS1jbGF2ZS1zZWNyZXRhLXN1cGVyLWxhcmdhLXBhcmEtcXVlLXNlYS1zZWd1cmEtMjAyNA==

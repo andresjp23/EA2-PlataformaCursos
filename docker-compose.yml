@@ -1,0 +1,204 @@
+version: "3.8"
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - data_db:/var/lib/mysql
+      - ./docs/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  eureka-server:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: eureka-server
+    volumes:
+      - ./apps/ms-01-eureka-server.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8761:8761"
+
+  ms-03-auth-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-03-auth-service
+    volumes:
+      - ./apps/ms-03-auth-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-04-user-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-04-user-service
+    volumes:
+      - ./apps/ms-04-user-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-05-category-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-05-category-service
+    volumes:
+      - ./apps/ms-05-category-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-06-lesson-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-06-lesson-service
+    volumes:
+      - ./apps/ms-06-lesson-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8084:8084"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-07-course-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-07-course-service
+    volumes:
+      - ./apps/ms-07-course-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8085:8085"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-08-enrollment-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-08-enrollment-service
+    volumes:
+      - ./apps/ms-08-enrollment-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8086:8086"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-09-progress-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-09-progress-service
+    volumes:
+      - ./apps/ms-09-progress-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8087:8087"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-10-evaluation-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-10-evaluation-service
+    volumes:
+      - ./apps/ms-10-evaluation-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8088:8088"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-11-certificate-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-11-certificate-service
+    volumes:
+      - ./apps/ms-11-certificate-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8089:8089"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  ms-12-grade-service:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: ms-12-grade-service
+    volumes:
+      - ./apps/ms-12-grade-service.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8090:8090"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  api-gateway:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: api-gateway
+    volumes:
+      - ./apps/ms-02-api-gateway.jar:/app/app.jar
+    command: java -jar /app/app.jar
+    ports:
+      - "8080:8080"
+    depends_on:
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+volumes:
+  data_db:
